@@ -2,23 +2,67 @@
     "storeName": "Wendy's 14205 - Stateline",
     "alert": "⚠️ Store Closed on Christmas",
     "alertType": "warning", 
-    "announcements": [
-        "Early Closure on New Years Eve",
-        "Jolt checklists will not display on 12/25/25",
-        "Jacquie is AWESOME!!!!",
-        "Becka is AWESOME!!!!!"
-    ],
-    "ltos": [
+    "daypartSchedule": [
         {
-         "text": "Upcoming Snickerdoodle disengagement 1/12/26",
-         "image": "snickerdoodle.png"   
+            "name": "DAYPART 1 (Breakfast)",
+            "startTime": "06:30",
+            "endTime": "10:30",
+            "color": "#e6a800",
+            "textColor": "#000",
+            "icon": "☕"
+        },
+        {
+            "name": "DAYPART 2 (Lunch Rush)",
+            "startTime": "10:30",
+            "endTime": "14:00",
+            "color": "#b00000",
+            "textColor": "#fff",
+            "icon": "🍔"
+        },
+        {
+            "name": "DAYPART 3 (Afternoon)",
+            "startTime": "14:00",
+            "endTime": "17:00",
+            "color": "#005cc8",
+            "textColor": "#fff",
+            "icon": "🍟"
+        },
+        {
+            "name": "DAYPART 4 (Dinner)",
+            "startTime": "17:00",
+            "endTime": "20:00",
+            "color": "#b00000",
+            "textColor": "#fff",
+            "icon": "🍽️"
+        },
+        {
+            "name": "DAYPART 5 (After Dinner Snack)",
+            "startTime": "20:00",
+            "endTime": "22:00",
+            "color": "#542a78",
+            "textColor": "#fff",
+            "icon": "🍦"
+        },
+        {
+            "name": "DAYPART 6 (Late Night)",
+            "startTime": "22:00",
+            "endTime": "24:00",
+            "color": "#333",
+            "textColor": "#fff",
+            "icon": "🌙"
         }
     ],
+    "announcements": [
+        
+        
+    ],
+    "ltos": [
+        
+        
+    ],
     "events": [
-        ""
+        
     ]
 }
-
-
 
 
