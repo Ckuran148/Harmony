@@ -7,27 +7,57 @@
     <style>
         /* --- VISUAL STYLES --- */
         body {
-            background-color: #121212; /* Dark background */
+            background-color: #121212; 
             color: white;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             height: 100vh;
             display: grid;
-            /* Top Row (Alerts) 15%, Middle (Daypart) 10%, Bottom (Content) Remaining */
+            /* Alert (15%), Daypart (10%), Content (Rest) */
             grid-template-rows: 15% 10% 1fr; 
             gap: 15px;
             padding: 20px;
             box-sizing: border-box;
         }
 
+        /* CLOSED OVERLAY STYLES */
+        #closed-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            z-index: 9999; 
+            color: #d32f2f;
+            display: flex; /* Hidden by JS by default */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        #closed-overlay h1 {
+            font-size: 8rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 10px;
+        }
+
+        #closed-overlay p {
+            font-size: 3rem;
+            color: white;
+            margin-top: 20px;
+        }
+
         /* 1. ALERT BANNER */
         #alert-section {
-            background-color: #028a0f; /* Default Green */
+            background-color: #028a0f; 
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem; /* Large text for TV */
+            font-size: 3rem; 
             font-weight: 800;
             text-transform: uppercase;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
@@ -50,17 +80,17 @@
         /* 3. CONTENT COLUMNS */
         .content-row {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr; /* 3 Equal Columns */
+            grid-template-columns: 1fr 1fr 1fr; 
             gap: 20px;
             height: 100%;
-            overflow: hidden; /* Prevents scrolling */
+            overflow: hidden; 
         }
 
         .card {
             background-color: #252525;
             border-radius: 10px;
             padding: 20px;
-            border-top: 6px solid #0097a7; /* Wendy's Blue-ish accent */
+            border-top: 6px solid #0097a7; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             display: flex;
             flex-direction: column;
@@ -79,7 +109,7 @@
             padding: 0;
             margin: 0;
             flex-grow: 1;
-            overflow-y: auto; /* Allow internal scrolling if list is huge */
+            overflow-y: auto; 
         }
 
         li {
@@ -106,37 +136,10 @@
             margin-right: 15px;
             border: 1px solid #555;
         }
-        /* CLOSED OVERLAY STYLES */
-        #closed-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: #000; /* Pitch black background */
-            z-index: 9999; /* Sit on top of everything */
-            color: #d32f2f; /* Red Text */
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-
-        #closed-overlay h1 {
-            font-size: 8rem;
-            margin: 0;
-            text-transform: uppercase;
-            letter-spacing: 10px;
-        }
-
-        #closed-overlay p {
-            font-size: 3rem;
-            color: white;
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
+
     <div id="closed-overlay" style="display: none;">
         <div>
             <h1>STORE CLOSED</h1>
@@ -157,74 +160,80 @@
             </ul>
         </div>
 
-        <div class="card" style="border-top-color: #e00000;"> <h2>🍔 Upcoming LTOs</h2>
+        <div class="card" style="border-top-color: #e00000;"> 
+            <h2>🍔 Upcoming LTOs</h2>
             <ul id="lto-list">
                 <li>Loading...</li>
             </ul>
         </div>
 
-        <div class="card" style="border-top-color: #e6a800;"> <h2>📅 This Week</h2>
+        <div class="card" style="border-top-color: #e6a800;"> 
+            <h2>📅 This Week</h2>
             <ul id="events-list">
                 <li>Loading...</li>
             </ul>
         </div>
     </div>
 
-   <script>
+    <script>
         const REFRESH_RATE = 30000; 
 
         const urlParams = new URLSearchParams(window.location.search);
         const storeID = urlParams.get('store'); 
-
-        // GLOBAL VARIABLE: Stores the schedule for this specific store
         let activeSchedule = [];
 
         async function fetchData() {
             if (!storeID) {
                 document.getElementById('alert-section').innerText = "ERROR: URL needs ?store=XXX";
+                document.getElementById('alert-section').style.backgroundColor = "black";
                 return;
             }
 
             try {
                 const now = new Date().getTime();
+                // Fetch BOTH files simultaneously
                 const [generalRes, storeRes] = await Promise.all([
                     fetch(`general.json?nocache=${now}`),
                     fetch(`store-${storeID}.json?nocache=${now}`)
                 ]);
 
-                if (!generalRes.ok) console.warn("General JSON not found");
                 if (!storeRes.ok) throw new Error("Store JSON not found");
 
-                const generalData = await generalRes.json();
+                const generalData = generalRes.ok ? await generalRes.json() : {};
                 const storeData = await storeRes.json();
 
-                // MERGE DATA including Closure Dates
-                const mergedData = {
-                    ...storeData, 
-                    announcements: [...(generalData.announcements || []), ...(storeData.announcements || [])],
-                    ltos: [...(generalData.ltos || []), ...(storeData.ltos || [])],
-                    events: [...(generalData.events || []), ...(storeData.events || [])],
-                    // Merge dates from both files
-                    closureDates: [
-                        ...(generalData.closureDates || []), 
-                        ...(storeData.closureDates || [])
-                    ]
-                };
+                // --- PRIORITY MERGE LOGIC ---
+                
+                // 1. Alert Priority: General > Store > Default
+                const finalAlert = generalData.alert || storeData.alert || "System Normal";
+                const finalAlertType = generalData.alert ? generalData.alertType : (storeData.alertType || "normal");
 
-                // Save schedule
+                // 2. Schedule Priority: Store > General
                 if (storeData.daypartSchedule) {
                     activeSchedule = storeData.daypartSchedule;
                 } else if (generalData.daypartSchedule) {
                     activeSchedule = generalData.daypartSchedule;
                 }
 
-                // 1. CHECK IF CLOSED (New Step)
+                // 3. Create the Master Data Object
+                const mergedData = {
+                    storeName: storeData.storeName || "Wendy's Dashboard",
+                    alert: finalAlert,
+                    alertType: finalAlertType,
+                    
+                    // Arrays are combined
+                    announcements: [...(generalData.announcements || []), ...(storeData.announcements || [])],
+                    ltos: [...(generalData.ltos || []), ...(storeData.ltos || [])],
+                    events: [...(generalData.events || []), ...(storeData.events || [])],
+                    closureDates: [...(generalData.closureDates || []), ...(storeData.closureDates || [])]
+                };
+
+                // --- CHECK FOR CLOSURE ---
                 const isClosed = checkClosure(mergedData.closureDates);
 
-                // 2. IF OPEN, UPDATE DASHBOARD NORMALLY
+                // --- UPDATE UI IF OPEN ---
                 if (!isClosed) {
                     updateDashboard(mergedData);
-                    // Also ensure Daypart updates if we just switched from Closed -> Open
                     if (activeSchedule.length > 0) updateDaypart();
                 }
 
@@ -232,36 +241,14 @@
                 console.error("Error loading data:", error);
             }
         }
-        function updateDashboard(data) {
-            if(data.storeName) document.title = data.storeName;
 
-            // Update Alert
-            const alertBox = document.getElementById('alert-section');
-            alertBox.innerText = data.alert || "System Normal";
-            
-            if (data.alertType === "warning") {
-                alertBox.style.backgroundColor = "#b00000"; 
-            } else if (data.alertType === "info") {
-                alertBox.style.backgroundColor = "#005cc8"; 
-            } else {
-                alertBox.style.backgroundColor = "#028a0f"; 
-            }
-
-            // Update Lists
-            updateList('announcements-list', data.announcements);
-            updateList('events-list', data.events);
-            updateLTOList('lto-list', data.ltos);
-        }
         function checkClosure(datesList) {
             const overlay = document.getElementById('closed-overlay');
-            
             if (!datesList || datesList.length === 0) {
                 overlay.style.display = 'none';
                 return false;
             }
 
-            // Get Local Date "YYYY-MM-DD"
-            // We do this manually to ensure it uses the TV's local timezone
             const now = new Date();
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -269,47 +256,57 @@
             const todayStr = `${year}-${month}-${day}`;
 
             if (datesList.includes(todayStr)) {
-                // IT IS A HOLIDAY/CLOSED DATE
                 overlay.style.display = 'flex';
-                return true; // Return true so we know to stop other updates
+                return true; 
             } else {
-                // WE ARE OPEN
                 overlay.style.display = 'none';
                 return false;
             }
         }
 
-        // --- NEW DYNAMIC DAYPART LOGIC ---
+        function updateDashboard(data) {
+            if(data.storeName) document.title = data.storeName;
+
+            // Update Alert
+            const alertBox = document.getElementById('alert-section');
+            alertBox.innerText = data.alert;
+            
+            if (data.alertType === "warning") {
+                alertBox.style.backgroundColor = "#b00000"; // Red
+            } else if (data.alertType === "info") {
+                alertBox.style.backgroundColor = "#005cc8"; // Blue
+            } else {
+                alertBox.style.backgroundColor = "#028a0f"; // Green
+            }
+
+            // Update Lists
+            updateList('announcements-list', data.announcements);
+            updateList('events-list', data.events);
+            updateLTOList('lto-list', data.ltos);
+        }
+
         function updateDaypart() {
-            // If we haven't loaded the JSON yet, do nothing
             if (activeSchedule.length === 0) return;
 
             const now = new Date();
             const currentMinutes = (now.getHours() * 60) + now.getMinutes();
 
-            // Default State
             let text = "PREP / OFF HOURS";
             let bgColor = "#333";
             let textColor = "#fff";
 
-            // Loop through the schedule from the JSON
             for (let i = 0; i < activeSchedule.length; i++) {
                 const phase = activeSchedule[i];
-                
-                // Convert "06:30" to 390 minutes
                 const startMin = timeToMinutes(phase.startTime);
                 const endMin = timeToMinutes(phase.endTime);
 
-                // Check if we are inside this range
                 if (currentMinutes >= startMin && currentMinutes < endMin) {
-                    // Format times for display (e.g., "06:30" -> "6:30 AM")
                     const displayStart = formatTimeDisplay(phase.startTime);
                     const displayEnd = formatTimeDisplay(phase.endTime);
-
                     text = `${phase.icon} ${phase.name} • ${displayStart} - ${displayEnd}`;
                     bgColor = phase.color;
                     textColor = phase.textColor;
-                    break; // Found it, stop looking
+                    break; 
                 }
             }
 
@@ -319,23 +316,17 @@
             dpDiv.style.color = textColor;
         }
 
-        // Helper: Converts "14:30" to 870 (minutes)
         function timeToMinutes(timeStr) {
             const [hours, minutes] = timeStr.split(':').map(Number);
             return (hours * 60) + minutes;
         }
 
-        // Helper: Converts "14:30" to "2:30 PM"
         function formatTimeDisplay(timeStr) {
-            // Handle "24:00" as midnight special case
             if (timeStr === "24:00") return "12:00 AM";
-            
             const [hours, minutes] = timeStr.split(':').map(Number);
             const suffix = hours >= 12 ? 'PM' : 'AM';
-            const displayHour = hours % 12 || 12; // Convert 0/12/13 to 12/12/1
-            // Pad minutes with zero if needed (e.g., "6:05")
+            const displayHour = hours % 12 || 12; 
             const displayMin = minutes.toString().padStart(2, '0'); 
-            
             return `${displayHour}:${displayMin} ${suffix}`;
         }
 
@@ -380,7 +371,7 @@
         // Start Up
         fetchData();
         setInterval(fetchData, REFRESH_RATE);
-        setInterval(updateDaypart, 60000); // Check time every minute
+        setInterval(updateDaypart, 60000); 
     </script>
 </body>
 </html>
