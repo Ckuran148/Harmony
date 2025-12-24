@@ -2,60 +2,117 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wendy's Crew Dashboard</title>
     <style>
-        /* 1. Basic TV-friendly styling */
+        /* --- VISUAL STYLES --- */
         body {
-            background-color: #121212; /* Dark background saves eyes/energy */
+            background-color: #121212; /* Dark background */
             color: white;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             height: 100vh;
             display: grid;
-            /* Create a grid: Top row for Alerts, Bottom for columns */
-            grid-template-rows: 15% 1fr; 
-            gap: 10px;
+            /* Top Row (Alerts) 15%, Middle (Daypart) 10%, Bottom (Content) Remaining */
+            grid-template-rows: 15% 10% 1fr; 
+            gap: 15px;
             padding: 20px;
+            box-sizing: border-box;
         }
 
-        /* 2. The Alert Banner (Always visible at top) */
+        /* 1. ALERT BANNER */
         #alert-section {
-            background-color: #b00000; /* Wendy's red (or darker) */
+            background-color: #028a0f; /* Default Green */
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5rem;
-            font-weight: bold;
+            font-size: 3rem; /* Large text for TV */
+            font-weight: 800;
             text-transform: uppercase;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
 
-        /* 3. The Main Content Area (Split into columns) */
+        /* 2. DAYPART BANNER */
+        #daypart-section {
+            background-color: #333;
+            border: 2px solid #555;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #eee;
+        }
+
+        /* 3. CONTENT COLUMNS */
         .content-row {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr; /* 3 equal columns */
+            grid-template-columns: 1fr 1fr 1fr; /* 3 Equal Columns */
             gap: 20px;
+            height: 100%;
+            overflow: hidden; /* Prevents scrolling */
         }
 
         .card {
-            background-color: #333;
+            background-color: #252525;
             border-radius: 10px;
             padding: 20px;
-            border-top: 5px solid #0097a7; /* Accent color */
+            border-top: 6px solid #0097a7; /* Wendy's Blue-ish accent */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
         }
 
-        h2 { border-bottom: 1px solid #555; padding-bottom: 10px; }
-        ul { list-style-type: none; padding: 0; font-size: 1.5rem;}
-        li { margin-bottom: 15px; }
+        h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #555;
+            padding-bottom: 15px;
+            font-size: 1.8rem;
+            color: #ddd;
+        }
 
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+            overflow-y: auto; /* Allow internal scrolling if list is huge */
+        }
+
+        li {
+            font-size: 1.6rem;
+            margin-bottom: 15px;
+            line-height: 1.4;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        /* LTO Image Styling */
+        .lto-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        .lto-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-right: 15px;
+            border: 1px solid #555;
+        }
     </style>
 </head>
 <body>
 
-    <div id="alert-section">
-        SYSTEM NORMAL
-    </div>
+    <div id="alert-section">Loading System...</div>
+
+    <div id="daypart-section">Calculating Daypart...</div>
 
     <div class="content-row">
         
@@ -66,15 +123,13 @@
             </ul>
         </div>
 
-        <div class="card">
-            <h2>🍔 Upcoming LTOs</h2>
+        <div class="card" style="border-top-color: #e00000;"> <h2>🍔 Upcoming LTOs</h2>
             <ul id="lto-list">
                 <li>Loading...</li>
             </ul>
         </div>
 
-        <div class="card">
-            <h2>📅 Events</h2>
+        <div class="card" style="border-top-color: #e6a800;"> <h2>📅 This Week</h2>
             <ul id="events-list">
                 <li>Loading...</li>
             </ul>
@@ -82,110 +137,157 @@
     </div>
 
     <script>
-const REFRESH_RATE = 30000; // 30 seconds
+        const REFRESH_RATE = 30000; // Refresh every 30 seconds
 
-    // 1. Detect Store ID from URL (e.g., dashboard.html?store=101)
-    const urlParams = new URLSearchParams(window.location.search);
-    const storeID = urlParams.get('store'); // Returns "101"
+        // 1. Detect Store ID from URL (e.g., dashboard.html?store=101)
+        const urlParams = new URLSearchParams(window.location.search);
+        const storeID = urlParams.get('store'); 
 
-    async function fetchData() {
-        if (!storeID) {
-            document.getElementById('alert-section').innerText = "ERROR: No Store ID in URL";
-            return;
-        }
+        async function fetchData() {
+            if (!storeID) {
+                document.getElementById('alert-section').innerText = "ERROR: URL needs ?store=XXX";
+                document.getElementById('alert-section').style.backgroundColor = "black";
+                return;
+            }
 
-        console.log(`Fetching data for Store ${storeID}...`);
-
-        try {
-            // This fetches the specific file for this store
-            // e.g., "store-101.json"
-            const response = await fetch(`store-${storeID}.json?nocache=` + new Date().getTime());
-            
-            if (!response.ok) throw new Error("File not found");
-
-            const data = await response.json();
-            updateDashboard(data);
-
-        } catch (error) {
-            console.error("Error loading data:", error);
-            // Optional: Show error on screen if data fails completely
-            // document.getElementById('alert-section').innerText = "DATA SYNC ERROR";
-        }
-    }
-
-function updateDashboard(data) {
-        document.title = data.storeName;
-
-        // 1. Update Alert (Same as before)
-        const alertBox = document.getElementById('alert-section');
-        alertBox.innerText = data.alert;
-        if (data.alertType === "warning") {
-            alertBox.style.backgroundColor = "#b00000"; 
-        } else if (data.alertType === "info") {
-            alertBox.style.backgroundColor = "#005cc8"; 
-        } else {
-            alertBox.style.backgroundColor = "#028a0f"; 
-        }
-
-        // 2. Update Simple Lists (Announcements & Events)
-        updateList('announcements-list', data.announcements);
-        updateList('events-list', data.events);
-
-        // 3. Update LTO List (NEW: Handles Images)
-        updateLTOList('lto-list', data.ltos);
-    }
-
-    // Standard list updater for text-only lists
-    function updateList(elementId, items) {
-        const list = document.getElementById(elementId);
-        list.innerHTML = ""; 
-        if(items) {
-            items.forEach(item => {
-                const li = document.createElement("li");
-                li.innerText = item;
-                list.appendChild(li);
-            });
-        }
-    }
-
-    // NEW: Specialized updater for LTOs with images
-    function updateLTOList(elementId, items) {
-        const list = document.getElementById(elementId);
-        list.innerHTML = ""; 
-        if(items) {
-            items.forEach(item => {
-                const li = document.createElement("li");
+            try {
+                // Fetch the JSON file with a timestamp to prevent browser caching
+                // This ensures if you update the file, the TV sees it instantly
+                const response = await fetch(`store-${storeID}.json?nocache=` + new Date().getTime());
                 
-                // Create a container for the item
-                li.style.display = "flex";
-                li.style.alignItems = "center";
-                li.style.marginBottom = "15px";
+                if (!response.ok) throw new Error("File not found");
 
-                // Add Image if it exists
-                if (item.image) {
-                    const img = document.createElement("img");
-                    img.src = item.image;
-                    img.style.width = "80px";   // Adjust size as needed
-                    img.style.height = "80px";
-                    img.style.objectFit = "cover";
-                    img.style.borderRadius = "8px";
-                    img.style.marginRight = "15px";
-                    li.appendChild(img);
-                }
+                const data = await response.json();
+                updateDashboard(data);
 
-                // Add Text
-                const span = document.createElement("span");
-                span.innerText = item.text;
-                li.appendChild(span);
-
-                list.appendChild(li);
-            });
+            } catch (error) {
+                console.error("Error loading data:", error);
+                // We typically don't show connection errors on the big screen 
+                // to avoid flickering "Error" messages during brief wifi drops.
+            }
         }
-    }
 
-    // Start
-    fetchData();
-    setInterval(fetchData, REFRESH_RATE);
+        function updateDashboard(data) {
+            // Update Title
+            if(data.storeName) document.title = data.storeName;
+
+            // 1. Update Alert Banner
+            const alertBox = document.getElementById('alert-section');
+            alertBox.innerText = data.alert || "System Normal";
+            
+            if (data.alertType === "warning") {
+                alertBox.style.backgroundColor = "#b00000"; // Red
+            } else if (data.alertType === "info") {
+                alertBox.style.backgroundColor = "#005cc8"; // Blue
+            } else {
+                alertBox.style.backgroundColor = "#028a0f"; // Green
+            }
+
+            // 2. Update Lists
+            updateList('announcements-list', data.announcements);
+            updateList('events-list', data.events);
+            
+            // 3. Update LTOs (Special function for images)
+            updateLTOList('lto-list', data.ltos);
+        }
+
+        function updateList(elementId, items) {
+            const list = document.getElementById(elementId);
+            list.innerHTML = ""; // Clear current items
+            if (items && items.length > 0) {
+                items.forEach(item => {
+                    const li = document.createElement("li");
+                    li.innerText = item;
+                    list.appendChild(li);
+                });
+            } else {
+                list.innerHTML = "<li>No updates.</li>";
+            }
+        }
+
+        function updateLTOList(elementId, items) {
+            const list = document.getElementById(elementId);
+            list.innerHTML = ""; 
+            if (items && items.length > 0) {
+                items.forEach(item => {
+                    const li = document.createElement("li");
+                    li.className = "lto-item";
+
+                    // Check for image
+                    if (item.image) {
+                        const img = document.createElement("img");
+                        img.src = item.image;
+                        img.className = "lto-img";
+                        // Error handler: hide image if file is missing
+                        img.onerror = function() { this.style.display = 'none'; };
+                        li.appendChild(img);
+                    }
+
+                    const span = document.createElement("span");
+                    span.innerText = item.text;
+                    li.appendChild(span);
+
+                    list.appendChild(li);
+                });
+            } else {
+                list.innerHTML = "<li>No upcoming LTOs.</li>";
+            }
+        }
+
+        function updateDaypart() {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMin = now.getMinutes();
+
+            // Convert current time to minutes from midnight
+            const minutesFromMidnight = (currentHour * 60) + currentMin;
+
+            let text = "PREP / OFF HOURS";
+            let color = "#333";
+
+            // DP1: 6:30 (390) - 10:30 (630)
+            if (minutesFromMidnight >= 390 && minutesFromMidnight < 630) {
+                text = "☕ DAYPART 1 (Breakfast)";
+                color = "#e6a800"; 
+            } 
+            // DP2: 10:30 (630) - 2:00 PM (840)
+            else if (minutesFromMidnight >= 630 && minutesFromMidnight < 840) {
+                text = "🍔 DAYPART 2 (Lunch Rush)";
+                color = "#b00000"; 
+            }
+            // DP3: 2:00 PM (840) - 5:00 PM (1020)
+            else if (minutesFromMidnight >= 840 && minutesFromMidnight < 1020) {
+                text = "🍟 DAYPART 3 (Snack Time)";
+                color = "#005cc8"; 
+            }
+            // DP4: 5:00 PM (1020) - 8:00 PM (1200)
+            else if (minutesFromMidnight >= 1020 && minutesFromMidnight < 1200) {
+                text = "🍽️ DAYPART 4 (Dinner)";
+                color = "#b00000"; 
+            }
+            // DP5: 8:00 PM (1200) - 10:00 PM (1320)
+            else if (minutesFromMidnight >= 1200 && minutesFromMidnight < 1320) {
+                text = "🌙 DAYPART 5 (After Dinner Snack)";
+                color = "#542a78"; // Purple
+            }
+            // DP6: 10:00 PM (1320) - 12:00 AM (1440)
+            else if (minutesFromMidnight >= 1320 && minutesFromMidnight < 1440) {
+                text = "🦉 DAYPART 6 (Late Night)";
+                color = "#333"; 
+            }
+
+            const dpDiv = document.getElementById('daypart-section');
+            dpDiv.innerText = text;
+            dpDiv.style.backgroundColor = color;
+        }
+
+        // --- STARTUP SEQUENCE ---
+        updateDaypart(); // Calculate time immediately
+        fetchData();     // Fetch data immediately
+
+        // Set timers
+        setInterval(fetchData, REFRESH_RATE);  // Update data every 30s
+        setInterval(updateDaypart, 60000);     // Check time every 1 minute
     </script>
 </body>
 </html>
