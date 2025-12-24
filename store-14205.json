@@ -1,7 +1,12 @@
 {
     "storeName": "Wendy's 14205 - Stateline",
-    "alert": "⚠️ Store Closed on 12/25/25",
-    "alertType": "warning", 
+
+    
+    "alerts": [
+        {
+         
+    }
+], 
     "daypartSchedule": [
         {
             "name": "DAYPART 1 (Breakfast)",
@@ -64,6 +69,5 @@
         
     ]
 }
-
 
 
