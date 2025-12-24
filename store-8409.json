@@ -1,7 +1,10 @@
 {
     "storeName": "Wendy's 8409 - Barker",
-    "alert": "⚠️ Store Closed on 12/25/25",
-    "alertType": "warning", 
+    "alerts": [
+        {
+         
+    }
+], 
     "daypartSchedule": [
         {
             "name": "DAYPART 1 (Breakfast)",
@@ -64,6 +67,5 @@
         
     ]
 }
-
 
 

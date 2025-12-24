@@ -18,9 +18,10 @@
             gap: 15px;
             padding: 20px;
             box-sizing: border-box;
+            overflow: hidden;
         }
 
-        /* CLOSED OVERLAY STYLES */
+        /* FULL SCREEN CLOSED OVERLAY */
         #closed-overlay {
             position: fixed;
             top: 0;
@@ -30,7 +31,7 @@
             background-color: #000;
             z-index: 9999; 
             color: #d32f2f;
-            display: flex; /* Hidden by JS by default */
+            display: flex; /* Hidden by JS default */
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -62,6 +63,7 @@
             text-transform: uppercase;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            transition: opacity 0.2s ease-in-out, background-color 0.2s; /* Smooth fade */
         }
 
         /* 2. DAYPART BANNER */
@@ -176,12 +178,19 @@
     </div>
 
     <script>
-        const REFRESH_RATE = 30000; 
+        // CONFIGURATION
+        const REFRESH_RATE = 30000;       // Fetch new data every 30s
+        const ALERT_ROTATION_RATE = 5000; // Switch alert every 5s
 
         const urlParams = new URLSearchParams(window.location.search);
         const storeID = urlParams.get('store'); 
+        
+        // GLOBAL STATE
         let activeSchedule = [];
+        let activeAlerts = []; 
+        let currentAlertIndex = 0;
 
+        // --- CORE FUNCTION: FETCH & MERGE DATA ---
         async function fetchData() {
             if (!storeID) {
                 document.getElementById('alert-section').innerText = "ERROR: URL needs ?store=XXX";
@@ -191,7 +200,7 @@
 
             try {
                 const now = new Date().getTime();
-                // Fetch BOTH files simultaneously
+                // 1. Fetch BOTH files simultaneously (nocache to force refresh)
                 const [generalRes, storeRes] = await Promise.all([
                     fetch(`general.json?nocache=${now}`),
                     fetch(`store-${storeID}.json?nocache=${now}`)
@@ -202,39 +211,42 @@
                 const generalData = generalRes.ok ? await generalRes.json() : {};
                 const storeData = await storeRes.json();
 
-                // --- PRIORITY MERGE LOGIC ---
-                
-                // 1. Alert Priority: General > Store > Default
-                const finalAlert = generalData.alert || storeData.alert || "System Normal";
-                const finalAlertType = generalData.alert ? generalData.alertType : (storeData.alertType || "normal");
+                // 2. COMPILE ALERTS (General + Store)
+                const rawAlerts = [
+                    ...(generalData.alerts || []), 
+                    ...(storeData.alerts || [])
+                ];
 
-                // 2. Schedule Priority: Store > General
-                if (storeData.daypartSchedule) {
-                    activeSchedule = storeData.daypartSchedule;
-                } else if (generalData.daypartSchedule) {
-                    activeSchedule = generalData.daypartSchedule;
+                // Filter: Keep only alerts that are date-valid
+                activeAlerts = rawAlerts.filter(isAlertActive);
+
+                // If no alerts exist, create a dummy "System Normal" one
+                if (activeAlerts.length === 0) {
+                    activeAlerts = [{ text: "System Normal", type: "normal" }];
                 }
 
-                // 3. Create the Master Data Object
+                // 3. COMPILE MASTER DATA OBJECT
                 const mergedData = {
                     storeName: storeData.storeName || "Wendy's Dashboard",
-                    alert: finalAlert,
-                    alertType: finalAlertType,
-                    
-                    // Arrays are combined
+                    // Arrays combined: General first, then Store
                     announcements: [...(generalData.announcements || []), ...(storeData.announcements || [])],
                     ltos: [...(generalData.ltos || []), ...(storeData.ltos || [])],
                     events: [...(generalData.events || []), ...(storeData.events || [])],
                     closureDates: [...(generalData.closureDates || []), ...(storeData.closureDates || [])]
                 };
 
-                // --- CHECK FOR CLOSURE ---
+                // Schedule Priority: Store overrides General
+                if (storeData.daypartSchedule) activeSchedule = storeData.daypartSchedule;
+                else if (generalData.daypartSchedule) activeSchedule = generalData.daypartSchedule;
+
+                // 4. CHECK FOR CLOSURE OVERRIDE
                 const isClosed = checkClosure(mergedData.closureDates);
 
-                // --- UPDATE UI IF OPEN ---
+                // 5. UPDATE UI (If open)
                 if (!isClosed) {
-                    updateDashboard(mergedData);
+                    updateDashboardContent(mergedData);
                     if (activeSchedule.length > 0) updateDaypart();
+                    // Note: Alert rotation is handled by its own separate timer
                 }
 
             } catch (error) {
@@ -242,49 +254,48 @@
             }
         }
 
-        function checkClosure(datesList) {
-            const overlay = document.getElementById('closed-overlay');
-            if (!datesList || datesList.length === 0) {
-                overlay.style.display = 'none';
-                return false;
-            }
+        // --- HELPER: DATE & ALERT CHECKER ---
+        function isAlertActive(config) {
+            if (!config || !config.text) return false;
+            // No dates = Always active
+            if (!config.startDate && !config.endDate) return true;
 
             const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const todayStr = `${year}-${month}-${day}`;
+            const todayStr = now.toISOString().split('T')[0]; // "YYYY-MM-DD"
 
-            if (datesList.includes(todayStr)) {
-                overlay.style.display = 'flex';
-                return true; 
-            } else {
-                overlay.style.display = 'none';
-                return false;
-            }
+            if (config.startDate && todayStr < config.startDate) return false;
+            if (config.endDate && todayStr > config.endDate) return false;
+
+            return true;
         }
 
-        function updateDashboard(data) {
-            if(data.storeName) document.title = data.storeName;
+        // --- HELPER: ALERT ROTATOR ---
+        function rotateAlert() {
+            if (activeAlerts.length === 0) return;
 
-            // Update Alert
+            // Cycle index: 0 -> 1 -> 2 -> 0...
+            currentAlertIndex = (currentAlertIndex + 1) % activeAlerts.length;
+            const alert = activeAlerts[currentAlertIndex];
+
             const alertBox = document.getElementById('alert-section');
-            alertBox.innerText = data.alert;
             
-            if (data.alertType === "warning") {
-                alertBox.style.backgroundColor = "#b00000"; // Red
-            } else if (data.alertType === "info") {
-                alertBox.style.backgroundColor = "#005cc8"; // Blue
-            } else {
-                alertBox.style.backgroundColor = "#028a0f"; // Green
-            }
+            // Fade out
+            alertBox.style.opacity = 0;
+            
+            setTimeout(() => {
+                alertBox.innerText = alert.text;
+                
+                // Set Color
+                if (alert.type === "warning") alertBox.style.backgroundColor = "#b00000"; // Red
+                else if (alert.type === "info") alertBox.style.backgroundColor = "#005cc8"; // Blue
+                else alertBox.style.backgroundColor = "#028a0f"; // Green
 
-            // Update Lists
-            updateList('announcements-list', data.announcements);
-            updateList('events-list', data.events);
-            updateLTOList('lto-list', data.ltos);
+                // Fade in
+                alertBox.style.opacity = 1;
+            }, 200); 
         }
 
+        // --- HELPER: DAYPART CALCULATOR ---
         function updateDaypart() {
             if (activeSchedule.length === 0) return;
 
@@ -316,18 +327,36 @@
             dpDiv.style.color = textColor;
         }
 
-        function timeToMinutes(timeStr) {
-            const [hours, minutes] = timeStr.split(':').map(Number);
-            return (hours * 60) + minutes;
+        // --- HELPER: CLOSURE CHECKER ---
+        function checkClosure(datesList) {
+            const overlay = document.getElementById('closed-overlay');
+            if (!datesList || datesList.length === 0) {
+                overlay.style.display = 'none';
+                return false;
+            }
+
+            // Get Local Date manually
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+
+            if (datesList.includes(todayStr)) {
+                overlay.style.display = 'flex'; // SHOW OVERLAY
+                return true; 
+            } else {
+                overlay.style.display = 'none'; // HIDE OVERLAY
+                return false;
+            }
         }
 
-        function formatTimeDisplay(timeStr) {
-            if (timeStr === "24:00") return "12:00 AM";
-            const [hours, minutes] = timeStr.split(':').map(Number);
-            const suffix = hours >= 12 ? 'PM' : 'AM';
-            const displayHour = hours % 12 || 12; 
-            const displayMin = minutes.toString().padStart(2, '0'); 
-            return `${displayHour}:${displayMin} ${suffix}`;
+        // --- STANDARD UPDATERS ---
+        function updateDashboardContent(data) {
+            if(data.storeName) document.title = data.storeName;
+            updateList('announcements-list', data.announcements);
+            updateList('events-list', data.events);
+            updateLTOList('lto-list', data.ltos);
         }
 
         function updateList(elementId, items) {
@@ -368,10 +397,27 @@
             }
         }
 
-        // Start Up
+        // Utility: "14:30" -> 870
+        function timeToMinutes(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return (hours * 60) + minutes;
+        }
+
+        // Utility: "14:30" -> "2:30 PM"
+        function formatTimeDisplay(timeStr) {
+            if (timeStr === "24:00") return "12:00 AM";
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const suffix = hours >= 12 ? 'PM' : 'AM';
+            const displayHour = hours % 12 || 12; 
+            const displayMin = minutes.toString().padStart(2, '0'); 
+            return `${displayHour}:${displayMin} ${suffix}`;
+        }
+
+        // --- START SEQUENCE ---
         fetchData();
-        setInterval(fetchData, REFRESH_RATE);
-        setInterval(updateDaypart, 60000); 
+        setInterval(fetchData, REFRESH_RATE);       // Data Sync
+        setInterval(rotateAlert, ALERT_ROTATION_RATE); // Alert Rotate
+        setInterval(updateDaypart, 60000);          // Clock Tick
     </script>
 </body>
 </html>

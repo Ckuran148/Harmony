@@ -1,13 +1,26 @@
 {
-    "alert": "⚠️ Store Closed on 12/25/2025",
-    "alertType": "warning",
+    "alerts": [
+        {
+        "text": "⚠️ Store Closed on 12/25/2025",
+        "type": "warning",
+        "startDate": "2025-12-24",  
+        "endDate": "2025-12-25" 
+    },
+    {
+        "text": "FSA Cycle 9 Coming up",
+        "type": "info",
+        "startDate": "2025-12-24",  
+        "endDate": "2025-12-31" 
+    }
+    ],
+    
     "closureDates": [
         "2025-12-25" 
     ],
     "announcements": [
         "Early Closure on New Year's Eve",
         "Jolt checklists will not display on 12/25/25",
-        "Watch out for counterfiet money❗❗",
+        "Watch out for counterfeit money❗❗",
         "Remember - Money NEVER leaves the store❗❗"
     ],
     "ltos": [
