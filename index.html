@@ -234,7 +234,7 @@
             }
         }
 
-        function updateDaypart() {
+function updateDaypart() {
             const now = new Date();
             const currentHour = now.getHours();
             const currentMin = now.getMinutes();
@@ -243,42 +243,45 @@
             const minutesFromMidnight = (currentHour * 60) + currentMin;
 
             let text = "PREP / OFF HOURS";
-            let color = "#333";
+            let bgColor = "#333";
+            let textColor = "#fff"; // Default text color is White
 
-            // DP1: 6:30 (390) - 10:30 (630)
+            // DP1: 6:30 (390) - 10:30 (630) -- MORNING
             if (minutesFromMidnight >= 390 && minutesFromMidnight < 630) {
                 text = "☕ DAYPART 1 (Breakfast)";
-                color = "#e6a800"; 
+                bgColor = "#e6a800"; // Gold
+                textColor = "#000";  // CHANGE: Black text for contrast
             } 
             // DP2: 10:30 (630) - 2:00 PM (840)
             else if (minutesFromMidnight >= 630 && minutesFromMidnight < 840) {
                 text = "🍔 DAYPART 2 (Lunch Rush)";
-                color = "#b00000"; 
+                bgColor = "#b00000"; 
             }
             // DP3: 2:00 PM (840) - 5:00 PM (1020)
             else if (minutesFromMidnight >= 840 && minutesFromMidnight < 1020) {
-                text = "🍟 DAYPART 3 (Snack Time)";
-                color = "#005cc8"; 
+                text = "🍟 DAYPART 3 (Afternoon)";
+                bgColor = "#005cc8"; 
             }
             // DP4: 5:00 PM (1020) - 8:00 PM (1200)
             else if (minutesFromMidnight >= 1020 && minutesFromMidnight < 1200) {
                 text = "🍽️ DAYPART 4 (Dinner)";
-                color = "#b00000"; 
+                bgColor = "#b00000"; 
             }
             // DP5: 8:00 PM (1200) - 10:00 PM (1320)
             else if (minutesFromMidnight >= 1200 && minutesFromMidnight < 1320) {
                 text = "🌙 DAYPART 5 (After Dinner Snack)";
-                color = "#542a78"; // Purple
+                bgColor = "#542a78"; 
             }
             // DP6: 10:00 PM (1320) - 12:00 AM (1440)
             else if (minutesFromMidnight >= 1320 && minutesFromMidnight < 1440) {
                 text = "🦉 DAYPART 6 (Late Night)";
-                color = "#333"; 
+                bgColor = "#333"; 
             }
 
             const dpDiv = document.getElementById('daypart-section');
             dpDiv.innerText = text;
-            dpDiv.style.backgroundColor = color;
+            dpDiv.style.backgroundColor = bgColor;
+            dpDiv.style.color = textColor; // Apply the text color change
         }
 
         // --- STARTUP SEQUENCE ---
