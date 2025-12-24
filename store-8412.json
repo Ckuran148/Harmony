@@ -1,6 +1,6 @@
 {
     "storeName": "Wendy's 8412 - Argonne",
-    "alert": "⚠️ Store Closed on Christmas",
+    "alert": "⚠️ Store Closed on 12/25/25",
     "alertType": "warning", 
     "daypartSchedule": [
         {
@@ -64,5 +64,6 @@
         ""
     ]
 }
+
 
 
