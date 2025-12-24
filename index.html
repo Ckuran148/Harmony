@@ -106,9 +106,43 @@
             margin-right: 15px;
             border: 1px solid #555;
         }
+        /* CLOSED OVERLAY STYLES */
+        #closed-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000; /* Pitch black background */
+            z-index: 9999; /* Sit on top of everything */
+            color: #d32f2f; /* Red Text */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        #closed-overlay h1 {
+            font-size: 8rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 10px;
+        }
+
+        #closed-overlay p {
+            font-size: 3rem;
+            color: white;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
+    <div id="closed-overlay" style="display: none;">
+        <div>
+            <h1>STORE CLOSED</h1>
+            <p id="closed-reason">See you tomorrow!</p>
+        </div>
+    </div>
 
     <div id="alert-section">Loading System...</div>
 
@@ -152,53 +186,47 @@
             }
 
             try {
-                // Fetch BOTH files simultaneously
-                // We add timestamps to both to prevent caching
                 const now = new Date().getTime();
                 const [generalRes, storeRes] = await Promise.all([
                     fetch(`general.json?nocache=${now}`),
                     fetch(`store-${storeID}.json?nocache=${now}`)
                 ]);
 
-                // Check if files exist
                 if (!generalRes.ok) console.warn("General JSON not found");
                 if (!storeRes.ok) throw new Error("Store JSON not found");
 
                 const generalData = await generalRes.json();
                 const storeData = await storeRes.json();
 
-                // MERGE DATA
-                // We create a new object that combines the arrays
+                // MERGE DATA including Closure Dates
                 const mergedData = {
-                    ...storeData, // Keep store-specifics (Name, Alert, Schedule)
-                    
-                    // Combine Arrays: General First, then Local
-                    announcements: [
-                        ...(generalData.announcements || []), 
-                        ...(storeData.announcements || [])
-                    ],
-                    ltos: [
-                        ...(generalData.ltos || []), 
-                        ...(storeData.ltos || [])
-                    ],
-                    events: [
-                        ...(generalData.events || []), 
-                        ...(storeData.events || [])
+                    ...storeData, 
+                    announcements: [...(generalData.announcements || []), ...(storeData.announcements || [])],
+                    ltos: [...(generalData.ltos || []), ...(storeData.ltos || [])],
+                    events: [...(generalData.events || []), ...(storeData.events || [])],
+                    // Merge dates from both files
+                    closureDates: [
+                        ...(generalData.closureDates || []), 
+                        ...(storeData.closureDates || [])
                     ]
                 };
 
-                // Save schedule (Use store schedule, fallback to general if missing)
+                // Save schedule
                 if (storeData.daypartSchedule) {
                     activeSchedule = storeData.daypartSchedule;
                 } else if (generalData.daypartSchedule) {
                     activeSchedule = generalData.daypartSchedule;
                 }
-                
-                // Trigger Daypart update if this is the first load
-                updateDaypart();
 
-                // Send the merged big object to the display
-                updateDashboard(mergedData);
+                // 1. CHECK IF CLOSED (New Step)
+                const isClosed = checkClosure(mergedData.closureDates);
+
+                // 2. IF OPEN, UPDATE DASHBOARD NORMALLY
+                if (!isClosed) {
+                    updateDashboard(mergedData);
+                    // Also ensure Daypart updates if we just switched from Closed -> Open
+                    if (activeSchedule.length > 0) updateDaypart();
+                }
 
             } catch (error) {
                 console.error("Error loading data:", error);
@@ -223,6 +251,32 @@
             updateList('announcements-list', data.announcements);
             updateList('events-list', data.events);
             updateLTOList('lto-list', data.ltos);
+        }
+        function checkClosure(datesList) {
+            const overlay = document.getElementById('closed-overlay');
+            
+            if (!datesList || datesList.length === 0) {
+                overlay.style.display = 'none';
+                return false;
+            }
+
+            // Get Local Date "YYYY-MM-DD"
+            // We do this manually to ensure it uses the TV's local timezone
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+
+            if (datesList.includes(todayStr)) {
+                // IT IS A HOLIDAY/CLOSED DATE
+                overlay.style.display = 'flex';
+                return true; // Return true so we know to stop other updates
+            } else {
+                // WE ARE OPEN
+                overlay.style.display = 'none';
+                return false;
+            }
         }
 
         // --- NEW DYNAMIC DAYPART LOGIC ---
