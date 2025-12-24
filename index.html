@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Wendy's Crew Dashboard</title>
+    <style>
+        /* 1. Basic TV-friendly styling */
+        body {
+            background-color: #121212; /* Dark background saves eyes/energy */
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: grid;
+            /* Create a grid: Top row for Alerts, Bottom for columns */
+            grid-template-rows: 15% 1fr; 
+            gap: 10px;
+            padding: 20px;
+        }
+
+        /* 2. The Alert Banner (Always visible at top) */
+        #alert-section {
+            background-color: #b00000; /* Wendy's red (or darker) */
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        /* 3. The Main Content Area (Split into columns) */
+        .content-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr; /* 3 equal columns */
+            gap: 20px;
+        }
+
+        .card {
+            background-color: #333;
+            border-radius: 10px;
+            padding: 20px;
+            border-top: 5px solid #0097a7; /* Accent color */
+        }
+
+        h2 { border-bottom: 1px solid #555; padding-bottom: 10px; }
+        ul { list-style-type: none; padding: 0; font-size: 1.5rem;}
+        li { margin-bottom: 15px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="alert-section">
+        SYSTEM NORMAL
+    </div>
+
+    <div class="content-row">
+        
+        <div class="card">
+            <h2>📢 Announcements</h2>
+            <ul id="announcements-list">
+                <li>Loading...</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>🍔 Upcoming LTOs</h2>
+            <ul id="lto-list">
+                <li>Loading...</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>📅 Events</h2>
+            <ul id="events-list">
+                <li>Loading...</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+const REFRESH_RATE = 30000; // 30 seconds
+
+    // 1. Detect Store ID from URL (e.g., dashboard.html?store=101)
+    const urlParams = new URLSearchParams(window.location.search);
+    const storeID = urlParams.get('store'); // Returns "101"
+
+    async function fetchData() {
+        if (!storeID) {
+            document.getElementById('alert-section').innerText = "ERROR: No Store ID in URL";
+            return;
+        }
+
+        console.log(`Fetching data for Store ${storeID}...`);
+
+        try {
+            // This fetches the specific file for this store
+            // e.g., "store-101.json"
+            const response = await fetch(`store-${storeID}.json?nocache=` + new Date().getTime());
+            
+            if (!response.ok) throw new Error("File not found");
+
+            const data = await response.json();
+            updateDashboard(data);
+
+        } catch (error) {
+            console.error("Error loading data:", error);
+            // Optional: Show error on screen if data fails completely
+            // document.getElementById('alert-section').innerText = "DATA SYNC ERROR";
+        }
+    }
+
+function updateDashboard(data) {
+        document.title = data.storeName;
+
+        // 1. Update Alert (Same as before)
+        const alertBox = document.getElementById('alert-section');
+        alertBox.innerText = data.alert;
+        if (data.alertType === "warning") {
+            alertBox.style.backgroundColor = "#b00000"; 
+        } else if (data.alertType === "info") {
+            alertBox.style.backgroundColor = "#005cc8"; 
+        } else {
+            alertBox.style.backgroundColor = "#028a0f"; 
+        }
+
+        // 2. Update Simple Lists (Announcements & Events)
+        updateList('announcements-list', data.announcements);
+        updateList('events-list', data.events);
+
+        // 3. Update LTO List (NEW: Handles Images)
+        updateLTOList('lto-list', data.ltos);
+    }
+
+    // Standard list updater for text-only lists
+    function updateList(elementId, items) {
+        const list = document.getElementById(elementId);
+        list.innerHTML = ""; 
+        if(items) {
+            items.forEach(item => {
+                const li = document.createElement("li");
+                li.innerText = item;
+                list.appendChild(li);
+            });
+        }
+    }
+
+    // NEW: Specialized updater for LTOs with images
+    function updateLTOList(elementId, items) {
+        const list = document.getElementById(elementId);
+        list.innerHTML = ""; 
+        if(items) {
+            items.forEach(item => {
+                const li = document.createElement("li");
+                
+                // Create a container for the item
+                li.style.display = "flex";
+                li.style.alignItems = "center";
+                li.style.marginBottom = "15px";
+
+                // Add Image if it exists
+                if (item.image) {
+                    const img = document.createElement("img");
+                    img.src = item.image;
+                    img.style.width = "80px";   // Adjust size as needed
+                    img.style.height = "80px";
+                    img.style.objectFit = "cover";
+                    img.style.borderRadius = "8px";
+                    img.style.marginRight = "15px";
+                    li.appendChild(img);
+                }
+
+                // Add Text
+                const span = document.createElement("span");
+                span.innerText = item.text;
+                li.appendChild(span);
+
+                list.appendChild(li);
+            });
+        }
+    }
+
+    // Start
+    fetchData();
+    setInterval(fetchData, REFRESH_RATE);
+    </script>
+</body>
+</html>

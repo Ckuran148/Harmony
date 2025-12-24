@@ -1,0 +1,18 @@
+{
+    "storeName": "Wendy's 14205 - Stateline",
+    "alert": "⚠️ Store Closed on Christmas",
+    "alertType": "warning", 
+    "announcements": [
+        "Early Closure on New Years Eve",
+        "Jacquie is AWESOME!!!!"
+    ],
+    "ltos": [
+        {
+         "text": "Upcoming Snickerdoodle disengagement 1/12/26",
+         "image": "snickerdoodle.png"   
+        }
+    ],
+    "events": [
+        ""
+    ]
+}
