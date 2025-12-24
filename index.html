@@ -136,64 +136,158 @@
         </div>
     </div>
 
-    <script>
-        const REFRESH_RATE = 30000; // Refresh every 30 seconds
+   <script>
+        const REFRESH_RATE = 30000; 
 
-        // 1. Detect Store ID from URL (e.g., dashboard.html?store=101)
         const urlParams = new URLSearchParams(window.location.search);
         const storeID = urlParams.get('store'); 
+
+        // GLOBAL VARIABLE: Stores the schedule for this specific store
+        let activeSchedule = [];
 
         async function fetchData() {
             if (!storeID) {
                 document.getElementById('alert-section').innerText = "ERROR: URL needs ?store=XXX";
-                document.getElementById('alert-section').style.backgroundColor = "black";
                 return;
             }
 
             try {
-                // Fetch the JSON file with a timestamp to prevent browser caching
-                // This ensures if you update the file, the TV sees it instantly
-                const response = await fetch(`store-${storeID}.json?nocache=` + new Date().getTime());
-                
-                if (!response.ok) throw new Error("File not found");
+                // Fetch BOTH files simultaneously
+                // We add timestamps to both to prevent caching
+                const now = new Date().getTime();
+                const [generalRes, storeRes] = await Promise.all([
+                    fetch(`general.json?nocache=${now}`),
+                    fetch(`store-${storeID}.json?nocache=${now}`)
+                ]);
 
-                const data = await response.json();
-                updateDashboard(data);
+                // Check if files exist
+                if (!generalRes.ok) console.warn("General JSON not found");
+                if (!storeRes.ok) throw new Error("Store JSON not found");
+
+                const generalData = await generalRes.json();
+                const storeData = await storeRes.json();
+
+                // MERGE DATA
+                // We create a new object that combines the arrays
+                const mergedData = {
+                    ...storeData, // Keep store-specifics (Name, Alert, Schedule)
+                    
+                    // Combine Arrays: General First, then Local
+                    announcements: [
+                        ...(generalData.announcements || []), 
+                        ...(storeData.announcements || [])
+                    ],
+                    ltos: [
+                        ...(generalData.ltos || []), 
+                        ...(storeData.ltos || [])
+                    ],
+                    events: [
+                        ...(generalData.events || []), 
+                        ...(storeData.events || [])
+                    ]
+                };
+
+                // Save schedule (Use store schedule, fallback to general if missing)
+                if (storeData.daypartSchedule) {
+                    activeSchedule = storeData.daypartSchedule;
+                } else if (generalData.daypartSchedule) {
+                    activeSchedule = generalData.daypartSchedule;
+                }
+                
+                // Trigger Daypart update if this is the first load
+                updateDaypart();
+
+                // Send the merged big object to the display
+                updateDashboard(mergedData);
 
             } catch (error) {
                 console.error("Error loading data:", error);
-                // We typically don't show connection errors on the big screen 
-                // to avoid flickering "Error" messages during brief wifi drops.
             }
         }
-
         function updateDashboard(data) {
-            // Update Title
             if(data.storeName) document.title = data.storeName;
 
-            // 1. Update Alert Banner
+            // Update Alert
             const alertBox = document.getElementById('alert-section');
             alertBox.innerText = data.alert || "System Normal";
             
             if (data.alertType === "warning") {
-                alertBox.style.backgroundColor = "#b00000"; // Red
+                alertBox.style.backgroundColor = "#b00000"; 
             } else if (data.alertType === "info") {
-                alertBox.style.backgroundColor = "#005cc8"; // Blue
+                alertBox.style.backgroundColor = "#005cc8"; 
             } else {
-                alertBox.style.backgroundColor = "#028a0f"; // Green
+                alertBox.style.backgroundColor = "#028a0f"; 
             }
 
-            // 2. Update Lists
+            // Update Lists
             updateList('announcements-list', data.announcements);
             updateList('events-list', data.events);
-            
-            // 3. Update LTOs (Special function for images)
             updateLTOList('lto-list', data.ltos);
+        }
+
+        // --- NEW DYNAMIC DAYPART LOGIC ---
+        function updateDaypart() {
+            // If we haven't loaded the JSON yet, do nothing
+            if (activeSchedule.length === 0) return;
+
+            const now = new Date();
+            const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+
+            // Default State
+            let text = "PREP / OFF HOURS";
+            let bgColor = "#333";
+            let textColor = "#fff";
+
+            // Loop through the schedule from the JSON
+            for (let i = 0; i < activeSchedule.length; i++) {
+                const phase = activeSchedule[i];
+                
+                // Convert "06:30" to 390 minutes
+                const startMin = timeToMinutes(phase.startTime);
+                const endMin = timeToMinutes(phase.endTime);
+
+                // Check if we are inside this range
+                if (currentMinutes >= startMin && currentMinutes < endMin) {
+                    // Format times for display (e.g., "06:30" -> "6:30 AM")
+                    const displayStart = formatTimeDisplay(phase.startTime);
+                    const displayEnd = formatTimeDisplay(phase.endTime);
+
+                    text = `${phase.icon} ${phase.name} • ${displayStart} - ${displayEnd}`;
+                    bgColor = phase.color;
+                    textColor = phase.textColor;
+                    break; // Found it, stop looking
+                }
+            }
+
+            const dpDiv = document.getElementById('daypart-section');
+            dpDiv.innerText = text;
+            dpDiv.style.backgroundColor = bgColor;
+            dpDiv.style.color = textColor;
+        }
+
+        // Helper: Converts "14:30" to 870 (minutes)
+        function timeToMinutes(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return (hours * 60) + minutes;
+        }
+
+        // Helper: Converts "14:30" to "2:30 PM"
+        function formatTimeDisplay(timeStr) {
+            // Handle "24:00" as midnight special case
+            if (timeStr === "24:00") return "12:00 AM";
+            
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const suffix = hours >= 12 ? 'PM' : 'AM';
+            const displayHour = hours % 12 || 12; // Convert 0/12/13 to 12/12/1
+            // Pad minutes with zero if needed (e.g., "6:05")
+            const displayMin = minutes.toString().padStart(2, '0'); 
+            
+            return `${displayHour}:${displayMin} ${suffix}`;
         }
 
         function updateList(elementId, items) {
             const list = document.getElementById(elementId);
-            list.innerHTML = ""; // Clear current items
+            list.innerHTML = ""; 
             if (items && items.length > 0) {
                 items.forEach(item => {
                     const li = document.createElement("li");
@@ -212,21 +306,16 @@
                 items.forEach(item => {
                     const li = document.createElement("li");
                     li.className = "lto-item";
-
-                    // Check for image
                     if (item.image) {
                         const img = document.createElement("img");
                         img.src = item.image;
                         img.className = "lto-img";
-                        // Error handler: hide image if file is missing
                         img.onerror = function() { this.style.display = 'none'; };
                         li.appendChild(img);
                     }
-
                     const span = document.createElement("span");
                     span.innerText = item.text;
                     li.appendChild(span);
-
                     list.appendChild(li);
                 });
             } else {
@@ -234,62 +323,10 @@
             }
         }
 
-function updateDaypart() {
-            const now = new Date();
-            const currentHour = now.getHours();
-            const currentMin = now.getMinutes();
-
-            // Convert current time to minutes from midnight
-            const minutesFromMidnight = (currentHour * 60) + currentMin;
-
-            let text = "PREP / OFF HOURS";
-            let bgColor = "#333";
-            let textColor = "#fff"; 
-
-            // DP1: 6:30 (390) - 10:30 (630)
-            if (minutesFromMidnight >= 390 && minutesFromMidnight < 630) {
-                text = "☕ DAYPART 1 (Breakfast) • 6:30 AM - 10:30 AM";
-                bgColor = "#e6a800"; // Gold
-                textColor = "#000";  // Black text for visibility
-            } 
-            // DP2: 10:30 (630) - 2:00 PM (840)
-            else if (minutesFromMidnight >= 630 && minutesFromMidnight < 840) {
-                text = "🍔 DAYPART 2 (Lunch Rush) • 10:30 AM - 2:00 PM";
-                bgColor = "#b00000"; 
-            }
-            // DP3: 2:00 PM (840) - 5:00 PM (1020)
-            else if (minutesFromMidnight >= 840 && minutesFromMidnight < 1020) {
-                text = "🍟 DAYPART 3 (Afternoon) • 2:00 PM - 5:00 PM";
-                bgColor = "#005cc8"; 
-            }
-            // DP4: 5:00 PM (1020) - 8:00 PM (1200)
-            else if (minutesFromMidnight >= 1020 && minutesFromMidnight < 1200) {
-                text = "🍽️ DAYPART 4 (Dinner) • 5:00 PM - 8:00 PM";
-                bgColor = "#b00000"; 
-            }
-            // DP5: 8:00 PM (1200) - 10:00 PM (1320)
-            else if (minutesFromMidnight >= 1200 && minutesFromMidnight < 1320) {
-                text = "🍦 DAYPART 5 (After Dinner Snack) • 8:00 PM - 10:00 PM";
-                bgColor = "#542a78"; // Purple
-            }
-            // DP6: 10:00 PM (1320) - 12:00 AM (1440)
-            else if (minutesFromMidnight >= 1320 && minutesFromMidnight < 1440) {
-                text = "🌙 DAYPART 6 (Late Night) • 10:00 PM - 12:00 AM";
-                bgColor = "#333"; // Dark Grey
-            }
-
-            const dpDiv = document.getElementById('daypart-section');
-            dpDiv.innerText = text;
-            dpDiv.style.backgroundColor = bgColor;
-            dpDiv.style.color = textColor;
-        }
-        // --- STARTUP SEQUENCE ---
-        updateDaypart(); // Calculate time immediately
-        fetchData();     // Fetch data immediately
-
-        // Set timers
-        setInterval(fetchData, REFRESH_RATE);  // Update data every 30s
-        setInterval(updateDaypart, 60000);     // Check time every 1 minute
+        // Start Up
+        fetchData();
+        setInterval(fetchData, REFRESH_RATE);
+        setInterval(updateDaypart, 60000); // Check time every minute
     </script>
 </body>
 </html>
