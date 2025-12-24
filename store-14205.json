@@ -1,6 +1,6 @@
 {
     "storeName": "Wendy's 14205 - Stateline",
-    "alert": "⚠️ Store Closed on Christmas",
+    "alert": "⚠️ Store Closed on 12/25/25",
     "alertType": "warning", 
     "daypartSchedule": [
         {
@@ -64,5 +64,6 @@
         
     ]
 }
+
 
 
