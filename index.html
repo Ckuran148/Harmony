@@ -299,13 +299,14 @@
         }
 
         // --- JOLT LOGIC ---
+        // --- JOLT LOGIC (Updated to strip Emojis) ---
         async function fetchJoltData(locationId) {
             const listEl = document.getElementById('jolt-list');
             const container = document.getElementById('jolt-scroll-container');
 
             // 1. Stop existing scroll to prevent glitches during refresh
             if (joltScrollInterval) clearInterval(joltScrollInterval);
-            container.scrollTop = 0; // Reset position
+            container.scrollTop = 0; 
 
             const now = new Date();
             const start = Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime() / 1000);
@@ -346,26 +347,30 @@
 
                 // 2. Build the List
                 remaining.forEach(l => {
-                    const name = (l.instanceTitle && l.instanceTitle.trim()) ||
-                                 (l.listTemplate && l.listTemplate.title && l.listTemplate.title.trim()) ||
-                                 `Checklist ${l.id}`;
+                    // Get the raw name first
+                    let rawName = (l.instanceTitle && l.instanceTitle.trim()) ||
+                                  (l.listTemplate && l.listTemplate.title && l.listTemplate.title.trim()) ||
+                                  `Checklist ${l.id}`;
 
                     const li = document.createElement('li');
-                    li.textContent = name;
                     li.className = "jolt-item";
 
-                    // CHECK FOR IMPORTANCE 🟧
-                    if (name.includes('🟧')) {
+                    // STEP A: Check for importance BEFORE cleaning
+                    if (rawName.includes('🟧')) {
                         li.classList.add('jolt-important');
-                        // Optional: Remove the emoji so it looks cleaner, or keep it? 
-                        // Currently keeping it so they know what triggered it.
                     }
 
+                    // STEP B: Strip Emojis for display
+                    // This regex removes the orange square AND other icons (like 📋, 🍔, etc.)
+                    // \p{Extended_Pictographic} works in most modern browsers. 
+                    // The extra range covers standard symbols often used as emojis.
+                    const cleanName = rawName.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
+
+                    li.textContent = cleanName;
                     listEl.appendChild(li);
                 });
 
                 // 3. START AUTO SCROLL (If content overflows)
-                // We give the DOM a moment to render before measuring height
                 setTimeout(() => {
                     startJoltScroll(container, listEl);
                 }, 1000);
@@ -374,6 +379,8 @@
                 console.error("Jolt Connection Failed", err);
             }
         }
+                
+
 
         // --- SCROLL HELPER ---
         function startJoltScroll(container, listElement) {
