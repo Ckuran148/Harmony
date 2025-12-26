@@ -96,7 +96,6 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             display: flex;
             flex-direction: column;
-            /* Ensure the card itself doesn't scroll, but its content can */
             overflow: hidden; 
             position: relative;
         }
@@ -107,16 +106,14 @@
             padding-bottom: 15px;
             font-size: 1.8rem;
             color: #ddd;
-            /* Keep header fixed at top of card */
             z-index: 10;
             background-color: #252525; 
         }
 
         /* SCROLLABLE LIST CONTAINER */
-        /* This wrapper allows us to hide the scrollbar but keep functionality */
         .list-container {
             flex-grow: 1;
-            overflow: hidden; /* Hide scrollbars */
+            overflow: hidden; 
             position: relative;
         }
 
@@ -156,7 +153,6 @@
             color: #ffcccc; /* Light red default */
         }
         
-        /* The Importance Style */
         .jolt-important {
             color: #fff !important;
             background-color: rgba(255, 140, 0, 0.15); /* Orange Tint */
@@ -164,7 +160,6 @@
             padding-left: 10px;
             font-weight: bold;
         }
-
     </style>
 </head>
 <body>
@@ -204,7 +199,7 @@
         </div>
 
         <div class="card" style="border-top-color: #0088ff;"> 
-            <h2>📋 Pending Lists</h2>
+            <h2>📋 Checklists</h2>
             <div class="list-container" id="jolt-scroll-container">
                 <ul id="jolt-list"><li>Syncing...</li></ul>
             </div>
@@ -228,6 +223,7 @@
                     listTemplate { title }
                     displayTimestamp
                     createTimestamp
+                    deadlineTimestamp
                 }
             }
         `;
@@ -298,23 +294,24 @@
             }
         }
 
-        // --- JOLT LOGIC ---
-        // --- JOLT LOGIC (Updated to strip Emojis) ---
+        // --- JOLT LOGIC (Updated to show ALL active) ---
         async function fetchJoltData(locationId) {
             const listEl = document.getElementById('jolt-list');
             const container = document.getElementById('jolt-scroll-container');
 
-            // 1. Stop existing scroll to prevent glitches during refresh
+            // 1. Stop existing scroll to prevent glitches
             if (joltScrollInterval) clearInterval(joltScrollInterval);
             container.scrollTop = 0; 
 
-            const now = new Date();
-            const start = Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime() / 1000);
-            const end = Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime() / 1000);
+            // CALCULATE ACTIVE WINDOW
+            // We want lists where the deadline is in the FUTURE (deadline > now)
+            // We set a lookahead of 7 days to capture Weekly tasks that might be active now but due later
+            const nowSeconds = Math.floor(Date.now() / 1000);
+            const futureWindow = nowSeconds + (30 * 24 * 60 * 60); // 7 Days lookahead
 
             const filter = {
-                deadlineAfterTimestamp: start,
-                deadlineBeforeTimestamp: end,
+                deadlineAfterTimestamp: nowSeconds, // Must expire AFTER right now
+                deadlineBeforeTimestamp: futureWindow, // Cap at 7 days to avoid huge data
                 completionStatus: "INCOMPLETE",
                 isSublist: false
             };
@@ -336,41 +333,62 @@
                 }
 
                 const lists = payload.data.listInstances || [];
-                const remaining = lists.filter(l => !l.completionTimestamp);
+                const incomplete = lists.filter(l => !l.completionTimestamp);
 
                 listEl.innerHTML = ''; 
 
-                if (remaining.length === 0) {
-                    listEl.innerHTML = '<li style="color: #028a0f;">✅ All Done!</li>';
+                if (incomplete.length === 0) {
+                    listEl.innerHTML = '<li style="color: #028a0f;">✅ All Caught Up!</li>';
                     return;
                 }
 
-                // 2. Build the List
-                remaining.forEach(l => {
-                    // Get the raw name first
-                    let rawName = (l.instanceTitle && l.instanceTitle.trim()) ||
-                                  (l.listTemplate && l.listTemplate.title && l.listTemplate.title.trim()) ||
-                                  `Checklist ${l.id}`;
+                // SORT: Oldest Display Time first
+                incomplete.sort((a, b) => (a.displayTimestamp || 0) - (b.displayTimestamp || 0));
 
-                    const li = document.createElement('li');
-                    li.className = "jolt-item";
+                const pending = [];
+                const upcoming = [];
+                const threeHoursLater = nowSeconds + (3 * 60 * 60);
 
-                    // STEP A: Check for importance BEFORE cleaning
-                    if (rawName.includes('🟧')) {
-                        li.classList.add('jolt-important');
+                incomplete.forEach(l => {
+                    const disp = l.displayTimestamp || 0;
+                    
+                    // PENDING: If it has already started displaying (and is not expired)
+                    if (disp <= nowSeconds) {
+                        pending.push(l);
+                    } 
+                    // UPCOMING: If it starts displaying soon (next 3 hours)
+                    else if (disp <= threeHoursLater) {
+                        upcoming.push(l);
                     }
-
-                    // STEP B: Strip Emojis for display
-                    // This regex removes the orange square AND other icons (like 📋, 🍔, etc.)
-                    // \p{Extended_Pictographic} works in most modern browsers. 
-                    // The extra range covers standard symbols often used as emojis.
-                    const cleanName = rawName.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
-
-                    li.textContent = cleanName;
-                    listEl.appendChild(li);
                 });
 
-                // 3. START AUTO SCROLL (If content overflows)
+                // RENDER: Pending
+                if (pending.length > 0) {
+                    const h = document.createElement('li');
+                    h.innerHTML = '<strong>⚠️ PENDING / DUE</strong>';
+                    h.style.color = '#ff9999'; 
+                    h.style.borderBottom = '1px dashed #555';
+                    h.style.paddingTop = '0';
+                    listEl.appendChild(h);
+                    pending.forEach(l => renderJoltItem(l, listEl));
+                }
+
+                // RENDER: Upcoming
+                if (upcoming.length > 0) {
+                    const h = document.createElement('li');
+                    h.innerHTML = '<strong>🕒 UPCOMING (Next 3 Hrs)</strong>';
+                    h.style.color = '#88ccff'; 
+                    h.style.borderBottom = '1px dashed #555';
+                    h.style.marginTop = pending.length > 0 ? '25px' : '0'; 
+                    listEl.appendChild(h);
+                    upcoming.forEach(l => renderJoltItem(l, listEl));
+                }
+
+                if (pending.length === 0 && upcoming.length === 0) {
+                     listEl.innerHTML = '<li style="color: #888;">No tasks soon.</li>';
+                }
+
+                // 3. START AUTO SCROLL
                 setTimeout(() => {
                     startJoltScroll(container, listEl);
                 }, 1000);
@@ -379,37 +397,45 @@
                 console.error("Jolt Connection Failed", err);
             }
         }
-                
 
+        function renderJoltItem(item, container) {
+            let rawName = (item.instanceTitle && item.instanceTitle.trim()) ||
+                          (item.listTemplate && item.listTemplate.title && item.listTemplate.title.trim()) ||
+                          `Checklist ${item.id}`;
+
+            const li = document.createElement('li');
+            li.className = "jolt-item";
+
+            // Check Importance 🟧
+            if (rawName.includes('🟧')) {
+                li.classList.add('jolt-important');
+            }
+
+            // Clean Name (Strip Emojis)
+            const cleanName = rawName.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
+
+            li.textContent = cleanName;
+            container.appendChild(li);
+        }
 
         // --- SCROLL HELPER ---
         function startJoltScroll(container, listElement) {
-            // Only scroll if content is taller than container
             if (listElement.scrollHeight <= container.clientHeight) return;
-
-            // Clone the list items to create a seamless loop
-            // We append the clone to the bottom of the list
             const clone = listElement.cloneNode(true);
-            // Remove IDs from clone to avoid duplicates in DOM
             clone.id = "jolt-clone"; 
             container.appendChild(clone);
 
-            // Scroll Speed (pixels per tick)
             const speed = 1; 
             
             joltScrollInterval = setInterval(() => {
                 container.scrollTop += speed;
-
-                // Infinite Loop Logic:
-                // If we have scrolled past the original list height, reset to 0
-                // (The user won't notice because the clone looks identical)
                 if (container.scrollTop >= listElement.scrollHeight) {
                     container.scrollTop = 0;
                 }
-            }, 50); // 50ms = 20 frames per second (Smooth slow scroll)
+            }, 50); 
         }
 
-        // --- HELPERS (Alerts, Daypart, etc - Same as before) ---
+        // --- HELPERS (Alerts, Daypart, etc) ---
         function isAlertActive(config) {
             if (!config || !config.text) return false;
             if (!config.startDate && !config.endDate) return true;
