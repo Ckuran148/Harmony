@@ -19,6 +19,24 @@
             padding: 20px;
             box-sizing: border-box;
             overflow: hidden;
+            position: relative; 
+        }
+
+        /* SITE INDICATOR (Updated) */
+        #site-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.5rem; /* Larger */
+            color: #ffffff;    /* Brighter */
+            font-weight: 900;
+            z-index: 1000;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background-color: rgba(0, 0, 0, 0.6); /* Background for contrast */
+            padding: 5px 15px;
+            border-radius: 8px;
+            border: 1px solid #555;
         }
 
         /* FULL SCREEN CLOSED OVERLAY */
@@ -148,21 +166,70 @@
             border: 1px solid #555;
         }
 
-        /* --- JOLT STYLES --- */
+        /* --- JOLT SPLIT COLUMN STYLES --- */
+        .jolt-split-card {
+            display: flex;
+            flex-direction: column;
+            padding: 0; 
+            border-top: 6px solid #0088ff;
+        }
+
+        .jolt-section {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 15px 20px;
+            position: relative;
+        }
+
+        /* Top Section: Current (Takes 60%) */
+        .jolt-top {
+            flex: 6; 
+            border-bottom: 2px solid #444;
+        }
+
+        /* Bottom Section: Upcoming (Takes 40%) */
+        .jolt-bottom {
+            flex: 4;
+            background-color: #2a2a2a; 
+        }
+
+        .jolt-header-small {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #aaa;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+
         .jolt-item {
             color: #ffcccc; /* Light red default */
         }
         
         .jolt-important {
             color: #fff !important;
-            background-color: rgba(255, 140, 0, 0.15); /* Orange Tint */
-            border-left: 5px solid #ff8c00; /* Orange Bar */
+            background-color: rgba(255, 140, 0, 0.15); 
+            border-left: 5px solid #ff8c00; 
             padding-left: 10px;
             font-weight: bold;
         }
+        
+        /* Late Style */
+        .jolt-late {
+            color: #ff5555 !important;
+            font-weight: bold;
+            border-left: 5px solid #ff0000;
+            padding-left: 10px;
+            background-color: rgba(255, 0, 0, 0.1);
+        }
+
     </style>
 </head>
 <body>
+
+    <div id="site-indicator">Store: Loading...</div>
 
     <div id="closed-overlay" style="display: none;">
         <div>
@@ -198,11 +265,22 @@
             </div>
         </div>
 
-        <div class="card" style="border-top-color: #0088ff;"> 
-            <h2>📋 Checklists</h2>
-            <div class="list-container" id="jolt-scroll-container">
-                <ul id="jolt-list"><li>Syncing...</li></ul>
+        <div class="card jolt-split-card"> 
+            
+            <div class="jolt-section jolt-top">
+                <div class="jolt-header-small" style="color: #ff9999;">📋 Current & Late</div>
+                <div class="list-container" id="jolt-scroll-current">
+                    <ul id="jolt-list-current"><li>Syncing...</li></ul>
+                </div>
             </div>
+
+            <div class="jolt-section jolt-bottom">
+                <div class="jolt-header-small" style="color: #88ccff;">🕒 Upcoming (3 Hrs)</div>
+                <div class="list-container" id="jolt-scroll-upcoming">
+                    <ul id="jolt-list-upcoming"><li>Loading...</li></ul>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -237,8 +315,9 @@
         let currentAlertIndex = 0;
         let cachedJoltId = null; 
         
-        // Scroll Timer
-        let joltScrollInterval = null;
+        // Scroll Timers 
+        let joltScrollIntervalCurrent = null;
+        let joltScrollIntervalUpcoming = null;
 
         // --- CORE FUNCTION ---
         async function fetchData() {
@@ -247,6 +326,9 @@
                 document.getElementById('alert-section').style.backgroundColor = "black";
                 return;
             }
+
+            // Update Site Indicator
+            document.getElementById('site-indicator').innerText = `Store: ${storeID}`;
 
             try {
                 const now = new Date().getTime();
@@ -286,7 +368,7 @@
                     if (activeSchedule.length > 0) updateDaypart();
                     
                     if (cachedJoltId) fetchJoltData(cachedJoltId);
-                    else document.getElementById('jolt-list').innerHTML = "<li>No Jolt ID Configured</li>";
+                    else document.getElementById('jolt-list-current').innerHTML = "<li>No Jolt ID Configured</li>";
                 }
 
             } catch (error) {
@@ -294,24 +376,36 @@
             }
         }
 
-        // --- JOLT LOGIC (Updated to show ALL active) ---
+        // --- JOLT LOGIC (Grace Period Implemented) ---
         async function fetchJoltData(locationId) {
-            const listEl = document.getElementById('jolt-list');
-            const container = document.getElementById('jolt-scroll-container');
+            const listCurrent = document.getElementById('jolt-list-current');
+            const scrollCurrent = document.getElementById('jolt-scroll-current');
+            
+            const listUpcoming = document.getElementById('jolt-list-upcoming');
+            const scrollUpcoming = document.getElementById('jolt-scroll-upcoming');
 
-            // 1. Stop existing scroll to prevent glitches
-            if (joltScrollInterval) clearInterval(joltScrollInterval);
-            container.scrollTop = 0; 
+            // 1. Reset Scrolls
+            if (joltScrollIntervalCurrent) clearInterval(joltScrollIntervalCurrent);
+            if (joltScrollIntervalUpcoming) clearInterval(joltScrollIntervalUpcoming);
+            scrollCurrent.scrollTop = 0; 
+            scrollUpcoming.scrollTop = 0;
 
-            // CALCULATE ACTIVE WINDOW
-            // We want lists where the deadline is in the FUTURE (deadline > now)
-            // We set a lookahead of 7 days to capture Weekly tasks that might be active now but due later
             const nowSeconds = Math.floor(Date.now() / 1000);
-            const futureWindow = nowSeconds + (30 * 24 * 60 * 60); // 7 Days lookahead
+            
+            // QUERY WINDOW:
+            // Look back 31 days for any active lists
+            const pastWindow = nowSeconds - (31 * 24 * 60 * 60); 
+            // Look forward 7 days for upcoming
+            const futureWindow = nowSeconds + (31 * 24 * 60 * 60); 
+
+            // LOGIC CONSTANTS
+            const threeHoursLater = nowSeconds + (3 * 60 * 60);
+            // Grace Period: 24 Hours. If deadline passed > 24 hrs ago, it is Expired/Hidden.
+            const expiredCutoff = nowSeconds - (24 * 60 * 60); 
 
             const filter = {
-                deadlineAfterTimestamp: nowSeconds, // Must expire AFTER right now
-                deadlineBeforeTimestamp: futureWindow, // Cap at 7 days to avoid huge data
+                deadlineAfterTimestamp: pastWindow, 
+                deadlineBeforeTimestamp: futureWindow, 
                 completionStatus: "INCOMPLETE",
                 isSublist: false
             };
@@ -335,62 +429,68 @@
                 const lists = payload.data.listInstances || [];
                 const incomplete = lists.filter(l => !l.completionTimestamp);
 
-                listEl.innerHTML = ''; 
+                listCurrent.innerHTML = ''; 
+                listUpcoming.innerHTML = '';
 
                 if (incomplete.length === 0) {
-                    listEl.innerHTML = '<li style="color: #028a0f;">✅ All Caught Up!</li>';
+                    listCurrent.innerHTML = '<li style="color: #028a0f;">✅ All Caught Up!</li>';
+                    listUpcoming.innerHTML = '<li style="color: #888;">Nothing scheduled.</li>';
                     return;
                 }
 
                 // SORT: Oldest Display Time first
                 incomplete.sort((a, b) => (a.displayTimestamp || 0) - (b.displayTimestamp || 0));
 
-                const pending = [];
-                const upcoming = [];
-                const threeHoursLater = nowSeconds + (3 * 60 * 60);
+                const currentItems = [];
+                const upcomingItems = [];
 
                 incomplete.forEach(l => {
                     const disp = l.displayTimestamp || 0;
-                    
-                    // PENDING: If it has already started displaying (and is not expired)
-                    if (disp <= nowSeconds) {
-                        pending.push(l);
+                    const dead = l.deadlineTimestamp || 0;
+
+                    // 1. IS IT UPCOMING? (Display > Now)
+                    if (disp > nowSeconds) {
+                        if (disp <= threeHoursLater) {
+                            upcomingItems.push({ item: l, status: 'upcoming' });
+                        }
                     } 
-                    // UPCOMING: If it starts displaying soon (next 3 hours)
-                    else if (disp <= threeHoursLater) {
-                        upcoming.push(l);
+                    // 2. IS IT CURRENT OR LATE? (Display <= Now)
+                    else {
+                        // Check if EXPIRED (Deadline passed more than 24 hours ago)
+                        if (dead > 0 && dead < expiredCutoff) {
+                            // Do nothing. It is expired and hidden.
+                            return; 
+                        }
+
+                        // Check if LATE (Deadline passed, but recently)
+                        if (dead > 0 && dead < nowSeconds) {
+                            currentItems.push({ item: l, status: 'late' });
+                        } 
+                        // OTHERWISE it is CURRENT
+                        else {
+                            currentItems.push({ item: l, status: 'active' });
+                        }
                     }
                 });
 
-                // RENDER: Pending
-                if (pending.length > 0) {
-                    const h = document.createElement('li');
-                    h.innerHTML = '<strong>⚠️ PENDING / DUE</strong>';
-                    h.style.color = '#ff9999'; 
-                    h.style.borderBottom = '1px dashed #555';
-                    h.style.paddingTop = '0';
-                    listEl.appendChild(h);
-                    pending.forEach(l => renderJoltItem(l, listEl));
+                // RENDER TOP SECTION
+                if (currentItems.length > 0) {
+                    currentItems.forEach(obj => renderJoltItem(obj, listCurrent));
+                } else {
+                    listCurrent.innerHTML = '<li style="color: #028a0f;">✅ Complete</li>';
                 }
 
-                // RENDER: Upcoming
-                if (upcoming.length > 0) {
-                    const h = document.createElement('li');
-                    h.innerHTML = '<strong>🕒 UPCOMING (Next 3 Hrs)</strong>';
-                    h.style.color = '#88ccff'; 
-                    h.style.borderBottom = '1px dashed #555';
-                    h.style.marginTop = pending.length > 0 ? '25px' : '0'; 
-                    listEl.appendChild(h);
-                    upcoming.forEach(l => renderJoltItem(l, listEl));
+                // RENDER BOTTOM SECTION
+                if (upcomingItems.length > 0) {
+                    upcomingItems.forEach(obj => renderJoltItem(obj, listUpcoming));
+                } else {
+                    listUpcoming.innerHTML = '<li style="color: #555;">None soon</li>';
                 }
 
-                if (pending.length === 0 && upcoming.length === 0) {
-                     listEl.innerHTML = '<li style="color: #888;">No tasks soon.</li>';
-                }
-
-                // 3. START AUTO SCROLL
+                // 3. START AUTO SCROLLS
                 setTimeout(() => {
-                    startJoltScroll(container, listEl);
+                    startJoltScroll(scrollCurrent, listCurrent, 'current');
+                    startJoltScroll(scrollUpcoming, listUpcoming, 'upcoming');
                 }, 1000);
 
             } catch (err) {
@@ -398,7 +498,10 @@
             }
         }
 
-        function renderJoltItem(item, container) {
+        function renderJoltItem(dataObj, container) {
+            const item = dataObj.item;
+            const status = dataObj.status;
+
             let rawName = (item.instanceTitle && item.instanceTitle.trim()) ||
                           (item.listTemplate && item.listTemplate.title && item.listTemplate.title.trim()) ||
                           `Checklist ${item.id}`;
@@ -406,33 +509,44 @@
             const li = document.createElement('li');
             li.className = "jolt-item";
 
-            // Check Importance 🟧
+            // 1. Check Importance 🟧
             if (rawName.includes('🟧')) {
                 li.classList.add('jolt-important');
             }
 
-            // Clean Name (Strip Emojis)
+            // 2. Clean Name (Strip Emojis)
             const cleanName = rawName.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
 
-            li.textContent = cleanName;
+            // 3. Add Status Indicators
+            if (status === 'late') {
+                li.classList.add('jolt-late');
+                li.innerHTML = `⚠️ ${cleanName}`; // Add Alert Icon for Late
+            } else {
+                li.textContent = cleanName;
+            }
+
             container.appendChild(li);
         }
 
         // --- SCROLL HELPER ---
-        function startJoltScroll(container, listElement) {
+        function startJoltScroll(container, listElement, type) {
             if (listElement.scrollHeight <= container.clientHeight) return;
+            
             const clone = listElement.cloneNode(true);
-            clone.id = "jolt-clone"; 
+            clone.id = `jolt-clone-${type}`; 
             container.appendChild(clone);
 
             const speed = 1; 
             
-            joltScrollInterval = setInterval(() => {
+            const interval = setInterval(() => {
                 container.scrollTop += speed;
                 if (container.scrollTop >= listElement.scrollHeight) {
                     container.scrollTop = 0;
                 }
-            }, 50); 
+            }, 50);
+
+            if (type === 'current') joltScrollIntervalCurrent = interval;
+            else joltScrollIntervalUpcoming = interval;
         }
 
         // --- HELPERS (Alerts, Daypart, etc) ---
