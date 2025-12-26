@@ -1,11 +1,11 @@
 {
     "storeName": "Wendy's 8412 - Argonne",
-   "alerts": [
+    "joltLocationId": "TG9jYXRpb246MDAwNTg3NWIyNjBkNGM2ZDFhNjJjODI1NWE1MjE4NzY=",
+
+    
+    "alerts": [
         {
-        "text": "⚠️ Store Closed on 12/25/25 ",
-        "type": "warning",
-        "startDate": "2025-12-24",  
-        "endDate": "2025-12-25" 
+         
     }
 ], 
     "daypartSchedule": [
@@ -59,7 +59,7 @@
         }
     ],
     "announcements": [
-        "Ducks are cool"
+        
         
     ],
     "ltos": [
