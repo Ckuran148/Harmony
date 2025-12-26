@@ -24,8 +24,12 @@
     ],
     "ltos": [
         {
-            "text": "Upcoming Snickerdoodle disengagement",
+            "text": "Snickerdoodle disengagement 1/12/25",
             "image": "snickerdoodle.png"
+        },
+        {
+            "text": "Cold Foam disengagement 1/12/25",
+            "image": "cold foam.png"
         }
     ],
     "events": [
