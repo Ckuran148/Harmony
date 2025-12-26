@@ -13,8 +13,8 @@
             margin: 0;
             height: 100vh;
             display: grid;
-            /* Alert (15%), Daypart (10%), Content (Rest) */
-            grid-template-rows: 15% 10% 1fr; 
+            /* Alert (12%), Daypart (8%), Content (Flexible), Sensors (20% - Slightly smaller row) */
+            grid-template-rows: 12% 8% 1fr 20%; 
             gap: 15px;
             padding: 20px;
             box-sizing: border-box;
@@ -22,18 +22,18 @@
             position: relative; 
         }
 
-        /* SITE INDICATOR (Updated) */
+        /* SITE INDICATOR */
         #site-indicator {
             position: absolute;
             top: 20px;
             right: 20px;
-            font-size: 1.5rem; /* Larger */
-            color: #ffffff;    /* Brighter */
+            font-size: 1.5rem; 
+            color: #ffffff;    
             font-weight: 900;
             z-index: 1000;
             text-transform: uppercase;
             letter-spacing: 1px;
-            background-color: rgba(0, 0, 0, 0.6); /* Background for contrast */
+            background-color: rgba(0, 0, 0, 0.6); 
             padding: 5px 15px;
             border-radius: 8px;
             border: 1px solid #555;
@@ -55,19 +55,8 @@
             justify-content: center;
             text-align: center;
         }
-
-        #closed-overlay h1 {
-            font-size: 8rem;
-            margin: 0;
-            text-transform: uppercase;
-            letter-spacing: 10px;
-        }
-
-        #closed-overlay p {
-            font-size: 3rem;
-            color: white;
-            margin-top: 20px;
-        }
+        #closed-overlay h1 { font-size: 8rem; margin: 0; text-transform: uppercase; letter-spacing: 10px; }
+        #closed-overlay p { font-size: 3rem; color: white; margin-top: 20px; }
 
         /* 1. ALERT BANNER */
         #alert-section {
@@ -129,101 +118,116 @@
         }
 
         /* SCROLLABLE LIST CONTAINER */
-        .list-container {
-            flex-grow: 1;
-            overflow: hidden; 
-            position: relative;
-        }
-
-        ul {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        li {
-            font-size: 1.6rem;
-            margin-bottom: 15px;
-            line-height: 1.4;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #333;
-        }
+        .list-container { flex-grow: 1; overflow: hidden; position: relative; }
+        ul { list-style-type: none; padding: 0; margin: 0; }
+        li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 10px; border-bottom: 1px solid #333; }
 
         /* LTO Image Styling */
-        .lto-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
+        .lto-item { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .lto-img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; margin-right: 15px; border: 1px solid #555; }
+
+        /* --- JOLT CHECKLIST STYLES --- */
+        .jolt-split-card { display: flex; flex-direction: column; padding: 0; border-top: 6px solid #0088ff; }
+        .jolt-section { display: flex; flex-direction: column; overflow: hidden; padding: 15px 20px; position: relative; }
+        .jolt-top { flex: 6; border-bottom: 2px solid #444; }
+        .jolt-bottom { flex: 4; background-color: #2a2a2a; }
+        .jolt-header-small { font-size: 1.4rem; font-weight: bold; color: #aaa; margin-bottom: 10px; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .jolt-item { color: #ffcccc; }
+        .jolt-important { color: #fff !important; background-color: rgba(255, 140, 0, 0.15); border-left: 5px solid #ff8c00; padding-left: 10px; font-weight: bold; }
+        .jolt-late { color: #ff5555 !important; font-weight: bold; border-left: 5px solid #ff0000; padding-left: 10px; background-color: rgba(255, 0, 0, 0.1); }
+
+        /* --- SENSOR ROW (SQUISH TO FIT) --- */
+        #sensor-row-container {
+            overflow: hidden; 
+            background-color: #1e1e1e; 
+            border-radius: 10px;
+            border: 1px solid #333;
+            /* Flex layout for the container */
+            display: flex; 
+            align-items: stretch; /* Cards stretch to full height */
+            padding: 5px;
         }
-        .lto-img {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
+
+        #sensor-grid {
+            width: 100%;
+            display: flex; /* Horizontal Layout */
+            gap: 5px; /* Tiny gap between cards to save space */
+            justify-content: flex-start; 
+        }
+
+        .sensor-card {
+            background: #252525; 
+            padding: 10px; 
             border-radius: 8px;
-            margin-right: 15px;
-            border: 1px solid #555;
-        }
-
-        /* --- JOLT SPLIT COLUMN STYLES --- */
-        .jolt-split-card {
+            border: 1px solid #444;
             display: flex;
             flex-direction: column;
-            padding: 0; 
-            border-top: 6px solid #0088ff;
+            justify-content: space-between;
+            
+            /* SQUISH LOGIC: */
+            flex: 1; /* Share space equally */
+            min-width: 0; /* Allow shrinking to 0 if absolutely necessary */
+            
+            box-sizing: border-box;
+            
+            /* CONTAINER QUERY: Allow children to resize based on this card's width */
+            container-type: inline-size; 
         }
 
-        .jolt-section {
-            display: flex;
-            flex-direction: column;
+        /* Responsive Text inside Sensor Cards using Container Queries */
+        .sensor-card h3 { 
+            margin: 0; 
+            font-weight: 600; 
+            color: #aaa; 
+            white-space: nowrap;
             overflow: hidden;
-            padding: 15px 20px;
-            position: relative;
-        }
-
-        /* Top Section: Current (Takes 60%) */
-        .jolt-top {
-            flex: 6; 
-            border-bottom: 2px solid #444;
-        }
-
-        /* Bottom Section: Upcoming (Takes 40%) */
-        .jolt-bottom {
-            flex: 4;
-            background-color: #2a2a2a; 
-        }
-
-        .jolt-header-small {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: #aaa;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            border-bottom: 1px solid #444;
-            padding-bottom: 5px;
-        }
-
-        .jolt-item {
-            color: #ffcccc; /* Light red default */
+            text-overflow: ellipsis;
+            text-align: center;
+            font-size: 12cqw; /* Default: Font size is 12% of card width */
+            max-font-size: 1.1rem; /* Cap at normal size */
         }
         
-        .jolt-important {
-            color: #fff !important;
-            background-color: rgba(255, 140, 0, 0.15); 
-            border-left: 5px solid #ff8c00; 
-            padding-left: 10px;
-            font-weight: bold;
+        .reading { 
+            font-weight: 700; 
+            color: #fff; 
+            margin-top: 2px;
+            text-align: center;
+            /* Dynamic Font Size */
+            font-size: 24cqw; /* Big: 24% of card width */
         }
         
-        /* Late Style */
-        .jolt-late {
-            color: #ff5555 !important;
-            font-weight: bold;
-            border-left: 5px solid #ff0000;
-            padding-left: 10px;
-            background-color: rgba(255, 0, 0, 0.1);
+        .signal-row { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            border-top: 1px solid #444;
+            padding-top: 5px;
+            font-size: 10cqw; /* Small icons */
         }
+
+        /* Hide the text "On Line" if card gets too small (< 120px) */
+        @container (max-width: 120px) {
+            .sensor-status-text { display: none; }
+            .reading { font-size: 28cqw; } /* Make number bigger to fill space */
+        }
+        
+        /* Stop fonts from getting ridiculously big on wide screens */
+        @media (min-width: 100px) {
+            .sensor-card h3 { font-size: clamp(0.8rem, 10cqw, 1.2rem); }
+            .reading { font-size: clamp(1.5rem, 20cqw, 3rem); }
+            .signal-row { font-size: clamp(0.8rem, 8cqw, 1.2rem); }
+        }
+
+        /* Sensor Alerts */
+        .temp-warning { color: #e6a800; } 
+        .temp-critical { color: #d9534f; animation: blink 1s step-start infinite; } 
+        
+        .blink { animation: blink 1s step-start infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        .battery-good { color: #28a745; }
+        .battery-med  { color: #e6a800; }
+        .battery-low  { color: #d9534f; font-weight: 700; }
 
     </style>
 </head>
@@ -243,45 +247,33 @@
     <div id="daypart-section">Calculating Daypart...</div>
 
     <div class="content-row">
-        
         <div class="card">
             <h2>📢 Announcements</h2>
-            <div class="list-container">
-                <ul id="announcements-list"><li>Loading...</li></ul>
-            </div>
+            <div class="list-container"><ul id="announcements-list"><li>Loading...</li></ul></div>
         </div>
-
         <div class="card" style="border-top-color: #e00000;"> 
             <h2>🍔 Upcoming LTOs</h2>
-            <div class="list-container">
-                <ul id="lto-list"><li>Loading...</li></ul>
-            </div>
+            <div class="list-container"><ul id="lto-list"><li>Loading...</li></ul></div>
         </div>
-
         <div class="card" style="border-top-color: #e6a800;"> 
             <h2>📅 This Week</h2>
-            <div class="list-container">
-                <ul id="events-list"><li>Loading...</li></ul>
-            </div>
+            <div class="list-container"><ul id="events-list"><li>Loading...</li></ul></div>
         </div>
-
         <div class="card jolt-split-card"> 
-            
             <div class="jolt-section jolt-top">
                 <div class="jolt-header-small" style="color: #ff9999;">📋 Current & Late</div>
-                <div class="list-container" id="jolt-scroll-current">
-                    <ul id="jolt-list-current"><li>Syncing...</li></ul>
-                </div>
+                <div class="list-container" id="jolt-scroll-current"><ul id="jolt-list-current"><li>Syncing...</li></ul></div>
             </div>
-
             <div class="jolt-section jolt-bottom">
                 <div class="jolt-header-small" style="color: #88ccff;">🕒 Upcoming (3 Hrs)</div>
-                <div class="list-container" id="jolt-scroll-upcoming">
-                    <ul id="jolt-list-upcoming"><li>Loading...</li></ul>
-                </div>
+                <div class="list-container" id="jolt-scroll-upcoming"><ul id="jolt-list-upcoming"><li>Loading...</li></ul></div>
             </div>
-
         </div>
+    </div>
+
+    <div id="sensor-row-container">
+        <div id="sensor-grid">
+            </div>
     </div>
 
     <script>
@@ -292,16 +284,22 @@
         // JOLT CONFIG
         const JOLT_ENDPOINT = "https://jolt-proxy.ckuran.workers.dev";
         const JOLT_HEADERS = { "Content-Type": "application/json" };
-        const JOLT_QUERY = `
+        
+        // Checklist Query
+        const CHECKLIST_QUERY = `
             query ListInstances($filter: ListInstancesFilter!, $mode: ModeInput) {
                 listInstances(filter: $filter, mode: $mode) {
-                    id
-                    instanceTitle
-                    completionTimestamp
-                    listTemplate { title }
-                    displayTimestamp
-                    createTimestamp
-                    deadlineTimestamp
+                    id, instanceTitle, completionTimestamp, listTemplate { title }, displayTimestamp, createTimestamp, deadlineTimestamp
+                }
+            }
+        `;
+
+        // Sensor Query
+        const SENSOR_QUERY = `
+            query ExampleQuery($mode: ModeInput!, $filter: SensorDeviceFilter, $scenarioEventsFilter: ScenarioEventsFilter) {
+                sensorDevices(mode: $mode, filter: $filter, scenarioEventsFilter: $scenarioEventsFilter) {
+                    name, readings { value type }, lastReadTime, signalStrength, batteryLevel
+                    scenarioEvents { alertType, isActive, readingType }
                 }
             }
         `;
@@ -314,8 +312,8 @@
         let activeAlerts = []; 
         let currentAlertIndex = 0;
         let cachedJoltId = null; 
-        
-        // Scroll Timers 
+
+        // Scroll Timers (Only for Jolt now)
         let joltScrollIntervalCurrent = null;
         let joltScrollIntervalUpcoming = null;
 
@@ -327,7 +325,6 @@
                 return;
             }
 
-            // Update Site Indicator
             document.getElementById('site-indicator').innerText = `Store: ${storeID}`;
 
             try {
@@ -342,19 +339,18 @@
                 const generalData = generalRes.ok ? await generalRes.json() : {};
                 const storeData = await storeRes.json();
 
-                // ALERTS
+                // ALERTS & MASTER DATA
                 const rawAlerts = [ ...(generalData.alerts || []), ...(storeData.alerts || []) ];
                 activeAlerts = rawAlerts.filter(isAlertActive);
                 if (activeAlerts.length === 0) activeAlerts = [{ text: "System Normal", type: "normal" }];
 
-                // MASTER DATA
                 const mergedData = {
                     storeName: storeData.storeName || "Wendy's Dashboard",
                     announcements: [...(generalData.announcements || []), ...(storeData.announcements || [])],
                     ltos: [...(generalData.ltos || []), ...(storeData.ltos || [])],
                     events: [...(generalData.events || []), ...(storeData.events || [])],
                     closureDates: [...(generalData.closureDates || []), ...(storeData.closureDates || [])],
-                    joltLocationId: storeData.joltLocationId 
+                    joltLocationId: storeData.joltLocationId
                 };
 
                 if (mergedData.joltLocationId) cachedJoltId = mergedData.joltLocationId;
@@ -367,8 +363,12 @@
                     updateDashboardContent(mergedData);
                     if (activeSchedule.length > 0) updateDaypart();
                     
-                    if (cachedJoltId) fetchJoltData(cachedJoltId);
-                    else document.getElementById('jolt-list-current').innerHTML = "<li>No Jolt ID Configured</li>";
+                    if (cachedJoltId) {
+                        fetchChecklists(cachedJoltId);
+                        fetchSensors(cachedJoltId); 
+                    } else {
+                        document.getElementById('jolt-list-current').innerHTML = "<li>No Jolt ID</li>";
+                    }
                 }
 
             } catch (error) {
@@ -376,31 +376,23 @@
             }
         }
 
-        // --- JOLT LOGIC (Grace Period Implemented) ---
-        async function fetchJoltData(locationId) {
+        // --- 1. CHECKLIST LOGIC ---
+        async function fetchChecklists(locationId) {
             const listCurrent = document.getElementById('jolt-list-current');
             const scrollCurrent = document.getElementById('jolt-scroll-current');
-            
             const listUpcoming = document.getElementById('jolt-list-upcoming');
             const scrollUpcoming = document.getElementById('jolt-scroll-upcoming');
 
-            // 1. Reset Scrolls
             if (joltScrollIntervalCurrent) clearInterval(joltScrollIntervalCurrent);
             if (joltScrollIntervalUpcoming) clearInterval(joltScrollIntervalUpcoming);
-            scrollCurrent.scrollTop = 0; 
-            scrollUpcoming.scrollTop = 0;
+            scrollCurrent.scrollTop = 0; scrollUpcoming.scrollTop = 0;
 
             const nowSeconds = Math.floor(Date.now() / 1000);
             
-            // QUERY WINDOW:
-            // Look back 31 days for any active lists
+            // 31 DAYS AHEAD WINDOW
             const pastWindow = nowSeconds - (31 * 24 * 60 * 60); 
-            // Look forward 7 days for upcoming
             const futureWindow = nowSeconds + (31 * 24 * 60 * 60); 
-
-            // LOGIC CONSTANTS
             const threeHoursLater = nowSeconds + (3 * 60 * 60);
-            // Grace Period: 24 Hours. If deadline passed > 24 hrs ago, it is Expired/Hidden.
             const expiredCutoff = nowSeconds - (24 * 60 * 60); 
 
             const filter = {
@@ -409,36 +401,21 @@
                 completionStatus: "INCOMPLETE",
                 isSublist: false
             };
-
             const variables = { filter, mode: { mode: "LOCATION", id: locationId } };
 
             try {
-                const res = await fetch(JOLT_ENDPOINT, {
-                    method: "POST",
-                    headers: JOLT_HEADERS,
-                    body: JSON.stringify({ query: JOLT_QUERY, variables })
-                });
-
+                const res = await fetch(JOLT_ENDPOINT, { method: "POST", headers: JOLT_HEADERS, body: JSON.stringify({ query: CHECKLIST_QUERY, variables }) });
                 const payload = await res.json();
-                
-                if (!payload || payload.errors) {
-                    console.error('Jolt GraphQL error', payload.errors);
-                    return; 
-                }
-
-                const lists = payload.data.listInstances || [];
+                const lists = payload.data?.listInstances || [];
                 const incomplete = lists.filter(l => !l.completionTimestamp);
 
-                listCurrent.innerHTML = ''; 
-                listUpcoming.innerHTML = '';
+                listCurrent.innerHTML = ''; listUpcoming.innerHTML = '';
 
                 if (incomplete.length === 0) {
                     listCurrent.innerHTML = '<li style="color: #028a0f;">✅ All Caught Up!</li>';
-                    listUpcoming.innerHTML = '<li style="color: #888;">Nothing scheduled.</li>';
                     return;
                 }
 
-                // SORT: Oldest Display Time first
                 incomplete.sort((a, b) => (a.displayTimestamp || 0) - (b.displayTimestamp || 0));
 
                 const currentItems = [];
@@ -448,108 +425,137 @@
                     const disp = l.displayTimestamp || 0;
                     const dead = l.deadlineTimestamp || 0;
 
-                    // 1. IS IT UPCOMING? (Display > Now)
                     if (disp > nowSeconds) {
-                        if (disp <= threeHoursLater) {
-                            upcomingItems.push({ item: l, status: 'upcoming' });
-                        }
-                    } 
-                    // 2. IS IT CURRENT OR LATE? (Display <= Now)
-                    else {
-                        // Check if EXPIRED (Deadline passed more than 24 hours ago)
-                        if (dead > 0 && dead < expiredCutoff) {
-                            // Do nothing. It is expired and hidden.
-                            return; 
-                        }
-
-                        // Check if LATE (Deadline passed, but recently)
-                        if (dead > 0 && dead < nowSeconds) {
-                            currentItems.push({ item: l, status: 'late' });
-                        } 
-                        // OTHERWISE it is CURRENT
-                        else {
-                            currentItems.push({ item: l, status: 'active' });
-                        }
+                        // UPCOMING
+                        if (disp <= threeHoursLater) upcomingItems.push({ item: l, status: 'upcoming' });
+                    } else {
+                        // CURRENT / LATE
+                        if (dead > 0 && dead < expiredCutoff) return; // Expired > 24h ago
+                        
+                        if (dead > 0 && dead < nowSeconds) currentItems.push({ item: l, status: 'late' });
+                        else currentItems.push({ item: l, status: 'active' });
                     }
                 });
 
-                // RENDER TOP SECTION
-                if (currentItems.length > 0) {
-                    currentItems.forEach(obj => renderJoltItem(obj, listCurrent));
-                } else {
-                    listCurrent.innerHTML = '<li style="color: #028a0f;">✅ Complete</li>';
-                }
+                if (currentItems.length > 0) currentItems.forEach(obj => renderJoltItem(obj, listCurrent));
+                else listCurrent.innerHTML = '<li style="color: #028a0f;">✅ Complete</li>';
 
-                // RENDER BOTTOM SECTION
-                if (upcomingItems.length > 0) {
-                    upcomingItems.forEach(obj => renderJoltItem(obj, listUpcoming));
-                } else {
-                    listUpcoming.innerHTML = '<li style="color: #555;">None soon</li>';
-                }
+                if (upcomingItems.length > 0) upcomingItems.forEach(obj => renderJoltItem(obj, listUpcoming));
+                else listUpcoming.innerHTML = '<li style="color: #555;">None soon</li>';
 
-                // 3. START AUTO SCROLLS
                 setTimeout(() => {
                     startJoltScroll(scrollCurrent, listCurrent, 'current');
                     startJoltScroll(scrollUpcoming, listUpcoming, 'upcoming');
                 }, 1000);
 
-            } catch (err) {
-                console.error("Jolt Connection Failed", err);
-            }
+            } catch (err) { console.error("Checklist Error", err); }
         }
 
         function renderJoltItem(dataObj, container) {
             const item = dataObj.item;
             const status = dataObj.status;
-
-            let rawName = (item.instanceTitle && item.instanceTitle.trim()) ||
-                          (item.listTemplate && item.listTemplate.title && item.listTemplate.title.trim()) ||
-                          `Checklist ${item.id}`;
-
+            let rawName = (item.instanceTitle && item.instanceTitle.trim()) || (item.listTemplate && item.listTemplate.title) || `Checklist ${item.id}`;
             const li = document.createElement('li');
             li.className = "jolt-item";
-
-            // 1. Check Importance 🟧
-            if (rawName.includes('🟧')) {
-                li.classList.add('jolt-important');
-            }
-
-            // 2. Clean Name (Strip Emojis)
+            if (rawName.includes('🟧')) li.classList.add('jolt-important');
             const cleanName = rawName.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
 
-            // 3. Add Status Indicators
-            if (status === 'late') {
-                li.classList.add('jolt-late');
-                li.innerHTML = `⚠️ ${cleanName}`; // Add Alert Icon for Late
-            } else {
-                li.textContent = cleanName;
-            }
-
+            if (status === 'late') { li.classList.add('jolt-late'); li.innerHTML = `⚠️ ${cleanName}`; } 
+            else { li.textContent = cleanName; }
             container.appendChild(li);
         }
 
-        // --- SCROLL HELPER ---
+        // --- 2. SENSOR LOGIC ---
+        async function fetchSensors(locationId) {
+            const grid = document.getElementById("sensor-grid");
+
+            const FILTER_DATA = {
+                locationIds: locationId, 
+                isActive: true,
+                alertTypes: ["WARNING","ALERT"],
+                readingTypes: "TEMPERATURE"
+            };
+
+            const SCENARIO_FILTER = {
+                alertTypes: ["ALERT", "WARNING"],
+                isCurrent: true,
+                readingType: "TEMPERATURE"
+            };
+
+            const variables = { 
+                mode: { mode: "CONTENT_GROUP", id: "Q29udGVudEdyb3VwOjAwMDU4NzViMjYwZDRjNmI2NDdhNjBjZDAxNDFlZDU2" }, 
+                filter: FILTER_DATA,
+                scenarioEventsFilter: SCENARIO_FILTER
+            };
+
+            try {
+                const res = await fetch(JOLT_ENDPOINT, { method: "POST", headers: JOLT_HEADERS, body: JSON.stringify({ query: SENSOR_QUERY, variables }) });
+                const json = await res.json();
+                const sensors = json.data?.sensorDevices || [];
+                
+                grid.innerHTML = ""; 
+                if(sensors.length > 0) {
+                    sensors.forEach(s => renderSensorCard(s, grid));
+                } else {
+                    grid.innerHTML = "<div style='color:#555; padding:10px;'>No Sensors Found</div>";
+                }
+
+            } catch (err) { console.error("Sensor Error", err); }
+        }
+
+        function renderSensorCard(sensor, grid) {
+            const displayName = sensor.name.includes("-") ? sensor.name.split("-").slice(1).join("-").trim() : sensor.name.trim();
+            const tempReading = sensor.readings.find(r => r.type === "VOLTAGE" || r.type === "TEMPERATURE");
+            let tempF = "N/A";
+            if (tempReading && !isNaN(tempReading.value)) tempF = ((tempReading.value * 9/5) + 32).toFixed(1) + "°F";
+
+            const offline = sensor.signalStrength === "No Signal";
+            
+            // Alert Indicators
+            let tempClass = "";
+            if(offline) {
+                tempClass = "blink";
+            } else if (sensor.scenarioEvents && sensor.scenarioEvents.length > 0) {
+                const tempEvents = sensor.scenarioEvents.filter(ev => ev.isActive && ev.readingType === "TEMPERATURE");
+                if (tempEvents.some(ev => ev.alertType === "ALERT")) tempClass = "temp-critical";
+                else if (tempEvents.some(ev => ev.alertType === "WARNING")) tempClass = "temp-warning";
+            }
+
+            let batHtml = '<span class="battery-good">🔋</span>';
+            if (sensor.batteryLevel <= 20) batHtml = '<span class="battery-low">🪫</span>';
+            else if (sensor.batteryLevel <= 59) batHtml = '<span class="battery-med">🔋</span>';
+
+            const card = document.createElement("div");
+            card.className = "sensor-card";
+            card.innerHTML = `
+                <div>
+                    <h3>${displayName}</h3>
+                    <div class="reading ${tempClass}">${offline ? "—" : tempF}</div>
+                </div>
+                <div class="signal-row">
+                    ${batHtml}
+                    <span class="sensor-status-text" style="color: #888;">${offline ? "No Sig" : "On Line"}</span>
+                </div>
+            `;
+            grid.appendChild(card);
+        }
+
+        // --- SCROLL HELPERS ---
         function startJoltScroll(container, listElement, type) {
             if (listElement.scrollHeight <= container.clientHeight) return;
-            
             const clone = listElement.cloneNode(true);
             clone.id = `jolt-clone-${type}`; 
             container.appendChild(clone);
-
             const speed = 1; 
-            
             const interval = setInterval(() => {
                 container.scrollTop += speed;
-                if (container.scrollTop >= listElement.scrollHeight) {
-                    container.scrollTop = 0;
-                }
+                if (container.scrollTop >= listElement.scrollHeight) container.scrollTop = 0;
             }, 50);
-
             if (type === 'current') joltScrollIntervalCurrent = interval;
             else joltScrollIntervalUpcoming = interval;
         }
 
-        // --- HELPERS (Alerts, Daypart, etc) ---
+        // --- HELPERS (Standard) ---
         function isAlertActive(config) {
             if (!config || !config.text) return false;
             if (!config.startDate && !config.endDate) return true;
@@ -565,7 +571,6 @@
             currentAlertIndex = (currentAlertIndex + 1) % activeAlerts.length;
             const alert = activeAlerts[currentAlertIndex];
             const alertBox = document.getElementById('alert-section');
-            
             alertBox.style.opacity = 0;
             setTimeout(() => {
                 alertBox.innerText = alert.text;
@@ -581,47 +586,30 @@
             const now = new Date();
             const currentMinutes = (now.getHours() * 60) + now.getMinutes();
             let text = "PREP / OFF HOURS";
-            let bgColor = "#333";
-            let textColor = "#fff";
-
+            let bgColor = "#333"; let textColor = "#fff";
             for (let i = 0; i < activeSchedule.length; i++) {
                 const phase = activeSchedule[i];
                 const startMin = timeToMinutes(phase.startTime);
                 const endMin = timeToMinutes(phase.endTime);
-
                 if (currentMinutes >= startMin && currentMinutes < endMin) {
                     const displayStart = formatTimeDisplay(phase.startTime);
                     const displayEnd = formatTimeDisplay(phase.endTime);
                     text = `${phase.icon} ${phase.name} • ${displayStart} - ${displayEnd}`;
-                    bgColor = phase.color;
-                    textColor = phase.textColor;
-                    break; 
+                    bgColor = phase.color; textColor = phase.textColor; break; 
                 }
             }
             const dpDiv = document.getElementById('daypart-section');
-            dpDiv.innerText = text;
-            dpDiv.style.backgroundColor = bgColor;
-            dpDiv.style.color = textColor;
+            dpDiv.innerText = text; dpDiv.style.backgroundColor = bgColor; dpDiv.style.color = textColor;
         }
 
         function checkClosure(datesList) {
             const overlay = document.getElementById('closed-overlay');
-            if (!datesList || datesList.length === 0) {
-                overlay.style.display = 'none';
-                return false;
-            }
+            if (!datesList || datesList.length === 0) { overlay.style.display = 'none'; return false; }
             const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
+            const year = now.getFullYear(); const month = String(now.getMonth() + 1).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0');
             const todayStr = `${year}-${month}-${day}`;
-            if (datesList.includes(todayStr)) {
-                overlay.style.display = 'flex'; 
-                return true; 
-            } else {
-                overlay.style.display = 'none';
-                return false;
-            }
+            if (datesList.includes(todayStr)) { overlay.style.display = 'flex'; return true; } 
+            else { overlay.style.display = 'none'; return false; }
         }
 
         function updateDashboardContent(data) {
@@ -632,54 +620,25 @@
         }
 
         function updateList(elementId, items) {
-            const list = document.getElementById(elementId);
-            list.innerHTML = ""; 
-            if (items && items.length > 0) {
-                items.forEach(item => {
-                    const li = document.createElement("li");
-                    li.innerText = item;
-                    list.appendChild(li);
-                });
-            } else {
-                list.innerHTML = "<li>No updates.</li>";
-            }
+            const list = document.getElementById(elementId); list.innerHTML = ""; 
+            if (items && items.length > 0) items.forEach(item => { const li = document.createElement("li"); li.innerText = item; list.appendChild(li); });
+            else list.innerHTML = "<li>No updates.</li>";
         }
 
         function updateLTOList(elementId, items) {
-            const list = document.getElementById(elementId);
-            list.innerHTML = ""; 
-            if (items && items.length > 0) {
-                items.forEach(item => {
-                    const li = document.createElement("li");
-                    li.className = "lto-item";
-                    if (item.image) {
-                        const img = document.createElement("img");
-                        img.src = item.image;
-                        img.className = "lto-img";
-                        img.onerror = function() { this.style.display = 'none'; };
-                        li.appendChild(img);
-                    }
-                    const span = document.createElement("span");
-                    span.innerText = item.text;
-                    li.appendChild(span);
-                    list.appendChild(li);
-                });
-            } else {
-                list.innerHTML = "<li>No upcoming LTOs.</li>";
-            }
+            const list = document.getElementById(elementId); list.innerHTML = ""; 
+            if (items && items.length > 0) items.forEach(item => {
+                const li = document.createElement("li"); li.className = "lto-item";
+                if (item.image) { const img = document.createElement("img"); img.src = item.image; img.className = "lto-img"; img.onerror = function() { this.style.display = 'none'; }; li.appendChild(img); }
+                const span = document.createElement("span"); span.innerText = item.text; li.appendChild(span); list.appendChild(li);
+            }); else list.innerHTML = "<li>No upcoming LTOs.</li>";
         }
 
-        function timeToMinutes(timeStr) {
-            const [hours, minutes] = timeStr.split(':').map(Number);
-            return (hours * 60) + minutes;
-        }
-
+        function timeToMinutes(timeStr) { const [hours, minutes] = timeStr.split(':').map(Number); return (hours * 60) + minutes; }
         function formatTimeDisplay(timeStr) {
             if (timeStr === "24:00") return "12:00 AM";
             const [hours, minutes] = timeStr.split(':').map(Number);
-            const suffix = hours >= 12 ? 'PM' : 'AM';
-            const displayHour = hours % 12 || 12; 
-            const displayMin = minutes.toString().padStart(2, '0'); 
+            const suffix = hours >= 12 ? 'PM' : 'AM'; const displayHour = hours % 12 || 12; const displayMin = minutes.toString().padStart(2, '0'); 
             return `${displayHour}:${displayMin} ${suffix}`;
         }
 
