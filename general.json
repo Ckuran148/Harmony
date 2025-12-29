@@ -17,8 +17,7 @@
     "closureDates": [
         "2025-12-25" 
     ],
-    "announcements": [
-        "Early Closure on New Year's Eve",        
+    "announcements": [               
         "Watch out for counterfeit money❗❗",
         "Remember - Money NEVER leaves the store❗❗"
     ],
@@ -33,6 +32,8 @@
         }
     ],
     "events": [
+        "Early Closure on New Year's Eve"
         
     ]
 }
+
