@@ -14,7 +14,7 @@
             height: 100vh;
             display: grid;
             /* Alert (12%), Daypart (8%), Content (Flexible), Sensors (20% - Slightly smaller row) */
-            grid-template-rows: 12% 8% 1fr 20%; 
+            grid-template-rows: 12% 8% 1fr 15%; 
             gap: 15px;
             padding: 20px;
             box-sizing: border-box;
@@ -136,45 +136,40 @@
         .jolt-important { color: #fff !important; background-color: rgba(255, 140, 0, 0.15); border-left: 5px solid #ff8c00; padding-left: 10px; font-weight: bold; }
         .jolt-late { color: #ff5555 !important; font-weight: bold; border-left: 5px solid #ff0000; padding-left: 10px; background-color: rgba(255, 0, 0, 0.1); }
 
-        /* --- SENSOR ROW (SQUISH TO FIT) --- */
+/* --- SENSOR ROW (UPDATED FOR SHORTER HEIGHT) --- */
         #sensor-row-container {
             overflow: hidden; 
             background-color: #1e1e1e; 
             border-radius: 10px;
             border: 1px solid #333;
-            /* Flex layout for the container */
             display: flex; 
-            align-items: stretch; /* Cards stretch to full height */
+            align-items: stretch; 
             padding: 5px;
         }
 
         #sensor-grid {
             width: 100%;
-            display: flex; /* Horizontal Layout */
-            gap: 5px; /* Tiny gap between cards to save space */
+            display: flex; 
+            gap: 5px; 
             justify-content: flex-start; 
         }
 
         .sensor-card {
             background: #252525; 
-            padding: 10px; 
+            /* REDUCED PADDING: Helps fit content in small height */
+            padding: 4px 8px; 
             border-radius: 8px;
             border: 1px solid #444;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            
-            /* SQUISH LOGIC: */
-            flex: 1; /* Share space equally */
-            min-width: 0; /* Allow shrinking to 0 if absolutely necessary */
-            
+            justify-content: space-between; /* Pushes signal row to very bottom */
+            flex: 1; 
+            min-width: 0; 
             box-sizing: border-box;
-            
-            /* CONTAINER QUERY: Allow children to resize based on this card's width */
             container-type: inline-size; 
         }
 
-        /* Responsive Text inside Sensor Cards using Container Queries */
+        /* UPDATED: Use VH (Viewport Height) so text scales with the row height */
         .sensor-card h3 { 
             margin: 0; 
             font-weight: 600; 
@@ -183,17 +178,18 @@
             overflow: hidden;
             text-overflow: ellipsis;
             text-align: center;
-            font-size: 12cqw; /* Default: Font size is 12% of card width */
-            max-font-size: 1.1rem; /* Cap at normal size */
+            /* Max height is 2.5% of screen height */
+            font-size: clamp(0.7rem, 2.5vh, 1rem); 
         }
         
         .reading { 
             font-weight: 700; 
             color: #fff; 
-            margin-top: 2px;
+            margin-top: 0;
             text-align: center;
-            /* Dynamic Font Size */
-            font-size: 24cqw; /* Big: 24% of card width */
+            line-height: 1.1;
+            /* Max height is 5% of screen height */
+            font-size: clamp(1.2rem, 5vh, 2.5rem); 
         }
         
         .signal-row { 
@@ -201,9 +197,19 @@
             align-items: center; 
             justify-content: space-between; 
             border-top: 1px solid #444;
-            padding-top: 5px;
-            font-size: 10cqw; /* Small icons */
+            padding-top: 2px;
+            /* Max height is 2% of screen height */
+            font-size: clamp(0.6rem, 2vh, 0.9rem); 
         }
+
+        /* Standard alerts */
+        .temp-warning { color: #e6a800; } 
+        .temp-critical { color: #d9534f; animation: blink 1s step-start infinite; } 
+        .blink { animation: blink 1s step-start infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        .battery-good { color: #28a745; }
+        .battery-med  { color: #e6a800; }
+        .battery-low  { color: #d9534f; font-weight: 700; }
 
         /* Hide the text "On Line" if card gets too small (< 120px) */
         @container (max-width: 120px) {
