@@ -5,7 +5,8 @@
     
     "alerts": [
         {
-         
+         "text": "Store 8412 - Dashboard",
+         "type": "info"
     }
 ], 
     "daypartSchedule": [
@@ -70,5 +71,6 @@
         ""
     ]
 }
+
 
 
