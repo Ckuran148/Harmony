@@ -2,7 +2,9 @@
     "storeName": "Wendy's 8409 - Barker",
     "joltLocationId": "TG9jYXRpb246MDAwNTg3NWIyNjBkNGM2ZDNhMTkxOTQ3YWI5MGUyMTI=",
     "alerts": [
-        {      
+        {     
+        "text": "Store 8409 - Dashboard",
+        "type": "info"
     }
 
 ], 
@@ -68,5 +70,6 @@
         
     ]
 }
+
 
 
