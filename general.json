@@ -12,11 +12,7 @@
         "startDate": "2025-12-24",  
         "endDate": "2025-12-31" 
     },
-        {
-        "text": "Happy New Years!",
-        "type": "info"
- 
-    }
+        
     ],
     
     "closureDates": [
@@ -41,6 +37,7 @@
         
     ]
 }
+
 
 
 
