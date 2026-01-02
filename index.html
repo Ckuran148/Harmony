@@ -2,658 +2,657 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jolt Operations Dashboard</title>
-    <link rel="stylesheet" href="jolt_styles.css">
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wendy's Crew Dashboard</title>
+    <style>
+        /* --- VISUAL STYLES --- */
+        body {
+            background-color: #121212; 
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: grid;
+            /* Alert (12%), Daypart (8%), Content (Flexible), Sensors (20% - Slightly smaller row) */
+            grid-template-rows: 12% 8% 1fr 15%; 
+            gap: 15px;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: hidden;
+            position: relative; 
+        }
+
+        /* SITE INDICATOR */
+        #site-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.5rem; 
+            color: #ffffff;    
+            font-weight: 900;
+            z-index: 1000;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background-color: rgba(0, 0, 0, 0.6); 
+            padding: 5px 15px;
+            border-radius: 8px;
+            border: 1px solid #555;
+        }
+
+        /* FULL SCREEN CLOSED OVERLAY */
+        #closed-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            z-index: 9999; 
+            color: #d32f2f;
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        #closed-overlay h1 { font-size: 8rem; margin: 0; text-transform: uppercase; letter-spacing: 10px; }
+        #closed-overlay p { font-size: 3rem; color: white; margin-top: 20px; }
+
+        /* 1. ALERT BANNER */
+        #alert-section {
+            background-color: #028a0f; 
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem; 
+            font-weight: 800;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            transition: opacity 0.2s ease-in-out, background-color 0.2s; 
+        }
+
+        /* 2. DAYPART BANNER */
+        #daypart-section {
+            background-color: #333;
+            border: 2px solid #555;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #eee;
+        }
+
+        /* 3. CONTENT COLUMNS */
+        .content-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 20px;
+            height: 100%;
+            overflow: hidden; 
+        }
+
+        .card {
+            background-color: #252525;
+            border-radius: 10px;
+            padding: 20px;
+            border-top: 6px solid #0097a7; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+            position: relative;
+        }
+
+        h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #555;
+            padding-bottom: 15px;
+            font-size: 1.8rem;
+            color: #ddd;
+            z-index: 10;
+            background-color: #252525; 
+        }
+
+        /* SCROLLABLE LIST CONTAINER */
+        .list-container { flex-grow: 1; overflow: hidden; position: relative; }
+        ul { list-style-type: none; padding: 0; margin: 0; }
+        li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 10px; border-bottom: 1px solid #333; }
+
+        /* LTO Image Styling */
+        .lto-item { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .lto-img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; margin-right: 15px; border: 1px solid #555; }
+
+        /* --- JOLT CHECKLIST STYLES --- */
+        .jolt-split-card { display: flex; flex-direction: column; padding: 0; border-top: 6px solid #0088ff; }
+        .jolt-section { display: flex; flex-direction: column; overflow: hidden; padding: 15px 20px; position: relative; }
+        .jolt-top { flex: 6; border-bottom: 2px solid #444; }
+        .jolt-bottom { flex: 4; background-color: #2a2a2a; }
+        .jolt-header-small { font-size: 1.4rem; font-weight: bold; color: #aaa; margin-bottom: 10px; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .jolt-item { color: #ffcccc; }
+        .jolt-important { color: #fff !important; background-color: rgba(255, 140, 0, 0.15); border-left: 5px solid #ff8c00; padding-left: 10px; font-weight: bold; }
+        .jolt-late { color: #ff5555 !important; font-weight: bold; border-left: 5px solid #ff0000; padding-left: 10px; background-color: rgba(255, 0, 0, 0.1); }
+
+/* --- SENSOR ROW (UPDATED FOR SHORTER HEIGHT) --- */
+        #sensor-row-container {
+            overflow: hidden; 
+            background-color: #1e1e1e; 
+            border-radius: 10px;
+            border: 1px solid #333;
+            display: flex; 
+            align-items: stretch; 
+            padding: 5px;
+        }
+
+        #sensor-grid {
+            width: 100%;
+            display: flex; 
+            gap: 5px; 
+            justify-content: flex-start; 
+        }
+
+        .sensor-card {
+            background: #252525; 
+            /* REDUCED PADDING: Helps fit content in small height */
+            padding: 4px 8px; 
+            border-radius: 8px;
+            border: 1px solid #444;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Pushes signal row to very bottom */
+            flex: 1; 
+            min-width: 0; 
+            box-sizing: border-box;
+            container-type: inline-size; 
+        }
+
+        /* UPDATED: Use VH (Viewport Height) so text scales with the row height */
+        .sensor-card h3 { 
+            margin: 0; 
+            font-weight: 600; 
+            color: #aaa; 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: center;
+            /* Max height is 2.5% of screen height */
+            font-size: clamp(0.7rem, 2.5vh, 1rem); 
+        }
+        
+        .reading { 
+            font-weight: 700; 
+            color: #fff; 
+            margin-top: 0;
+            text-align: center;
+            line-height: 1.1;
+            /* Max height is 5% of screen height */
+            font-size: clamp(1.2rem, 5vh, 2.5rem); 
+        }
+        
+        .signal-row { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            border-top: 1px solid #444;
+            padding-top: 2px;
+            /* Max height is 2% of screen height */
+            font-size: clamp(0.6rem, 2vh, 0.9rem); 
+        }
+
+        /* Standard alerts */
+        .temp-warning { color: #e6a800; } 
+        .temp-critical { color: #d9534f; animation: blink 1s step-start infinite; } 
+        .blink { animation: blink 1s step-start infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        .battery-good { color: #28a745; }
+        .battery-med  { color: #e6a800; }
+        .battery-low  { color: #d9534f; font-weight: 700; }
+
+        /* Hide the text "On Line" if card gets too small (< 120px) */
+        @container (max-width: 120px) {
+            .sensor-status-text { display: none; }
+            .reading { font-size: 28cqw; } /* Make number bigger to fill space */
+        }
+        
+        /* Stop fonts from getting ridiculously big on wide screens */
+        @media (min-width: 100px) {
+            .sensor-card h3 { font-size: clamp(0.8rem, 10cqw, 1.2rem); }
+            .reading { font-size: clamp(1.5rem, 20cqw, 3rem); }
+            .signal-row { font-size: clamp(0.8rem, 8cqw, 1.2rem); }
+        }
+
+        /* Sensor Alerts */
+        .temp-warning { color: #e6a800; } 
+        .temp-critical { color: #d9534f; animation: blink 1s step-start infinite; } 
+        
+        .blink { animation: blink 1s step-start infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        .battery-good { color: #28a745; }
+        .battery-med  { color: #e6a800; }
+        .battery-low  { color: #d9534f; font-weight: 700; }
+
+    </style>
 </head>
 <body>
- 
-<div class="dashboard-container">
-    
-    <!-- LEFT SIDEBAR (Desktop) / BOTTOM NAV (Mobile) -->
-    <aside class="sidebar">
-        <div class="brand">
-  <img src="LogoFace.png" alt="Wenspok Logo" style="height: 24px; margin-right: 10px; vertical-align: middle;">
-  
-  Wenspok Jolt
-</div>
 
-        <nav class="nav-menu">
+    <div id="site-indicator">Store: Loading...</div>
+
+    <div id="closed-overlay" style="display: none;">
+        <div>
+            <h1>STORE CLOSED</h1>
+            <p id="closed-reason">See you tomorrow!</p>
+        </div>
+    </div>
+
+    <div id="alert-section">Loading System...</div>
+
+    <div id="daypart-section">Calculating Daypart...</div>
+
+    <div class="content-row">
+        <div class="card">
+            <h2>📢 Announcements</h2>
+            <div class="list-container"><ul id="announcements-list"><li>Loading...</li></ul></div>
+        </div>
+        <div class="card" style="border-top-color: #e00000;"> 
+            <h2>🍔 Upcoming LTOs</h2>
+            <div class="list-container"><ul id="lto-list"><li>Loading...</li></ul></div>
+        </div>
+        <div class="card" style="border-top-color: #e6a800;"> 
+            <h2>📅 This Week</h2>
+            <div class="list-container"><ul id="events-list"><li>Loading...</li></ul></div>
+        </div>
+        <div class="card jolt-split-card"> 
+            <div class="jolt-section jolt-top">
+                <div class="jolt-header-small" style="color: #ff9999;">📋 Current & Late</div>
+                <div class="list-container" id="jolt-scroll-current"><ul id="jolt-list-current"><li>Syncing...</li></ul></div>
+            </div>
+            <div class="jolt-section jolt-bottom">
+                <div class="jolt-header-small" style="color: #88ccff;">🕒 Upcoming (3 Hrs)</div>
+                <div class="list-container" id="jolt-scroll-upcoming"><ul id="jolt-list-upcoming"><li>Loading...</li></ul></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sensor-row-container">
+        <div id="sensor-grid">
+            </div>
+    </div>
+
+    <script>
+        // CONFIGURATION
+        const REFRESH_RATE = 30000;       
+        const ALERT_ROTATION_RATE = 5000; 
+
+        // JOLT CONFIG
+        const JOLT_ENDPOINT = "https://jolt-proxy.ckuran.workers.dev";
+        const JOLT_HEADERS = { "Content-Type": "application/json" };
+        
+        // Checklist Query
+        const CHECKLIST_QUERY = `
+            query ListInstances($filter: ListInstancesFilter!, $mode: ModeInput) {
+                listInstances(filter: $filter, mode: $mode) {
+                    id, instanceTitle, completionTimestamp, listTemplate { title }, displayTimestamp, createTimestamp, deadlineTimestamp
+                }
+            }
+        `;
+
+        // Sensor Query
+        const SENSOR_QUERY = `
+            query ExampleQuery($mode: ModeInput!, $filter: SensorDeviceFilter, $scenarioEventsFilter: ScenarioEventsFilter) {
+                sensorDevices(mode: $mode, filter: $filter, scenarioEventsFilter: $scenarioEventsFilter) {
+                    name, readings { value type }, lastReadTime, signalStrength, batteryLevel
+                    scenarioEvents { alertType, isActive, readingType }
+                }
+            }
+        `;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const storeID = urlParams.get('store'); 
+        
+        // GLOBAL STATE
+        let activeSchedule = [];
+        let activeAlerts = []; 
+        let currentAlertIndex = 0;
+        let cachedJoltId = null; 
+
+        // Scroll Timers (Only for Jolt now)
+        let joltScrollIntervalCurrent = null;
+        let joltScrollIntervalUpcoming = null;
+
+        // --- CORE FUNCTION ---
+        async function fetchData() {
+            if (!storeID) {
+                document.getElementById('alert-section').innerText = "ERROR: URL needs ?store=XXX";
+                document.getElementById('alert-section').style.backgroundColor = "black";
+                return;
+            }
+
+            document.getElementById('site-indicator').innerText = `Store: ${storeID}`;
+
+            try {
+                const now = new Date().getTime();
+                const [generalRes, storeRes] = await Promise.all([
+                    fetch(`general.json?nocache=${now}`),
+                    fetch(`store-${storeID}.json?nocache=${now}`)
+                ]);
+
+                if (!storeRes.ok) throw new Error("Store JSON not found");
+
+                const generalData = generalRes.ok ? await generalRes.json() : {};
+                const storeData = await storeRes.json();
+
+                // ALERTS & MASTER DATA
+                const rawAlerts = [ ...(generalData.alerts || []), ...(storeData.alerts || []) ];
+                activeAlerts = rawAlerts.filter(isAlertActive);
+                if (activeAlerts.length === 0) activeAlerts = [{ text: "System Normal", type: "normal" }];
+
+                const mergedData = {
+                    storeName: storeData.storeName || "Wendy's Dashboard",
+                    announcements: [...(generalData.announcements || []), ...(storeData.announcements || [])],
+                    ltos: [...(generalData.ltos || []), ...(storeData.ltos || [])],
+                    events: [...(generalData.events || []), ...(storeData.events || [])],
+                    closureDates: [...(generalData.closureDates || []), ...(storeData.closureDates || [])],
+                    joltLocationId: storeData.joltLocationId
+                };
+
+                if (mergedData.joltLocationId) cachedJoltId = mergedData.joltLocationId;
+                if (storeData.daypartSchedule) activeSchedule = storeData.daypartSchedule;
+                else if (generalData.daypartSchedule) activeSchedule = generalData.daypartSchedule;
+
+                const isClosed = checkClosure(mergedData.closureDates);
+
+                if (!isClosed) {
+                    updateDashboardContent(mergedData);
+                    if (activeSchedule.length > 0) updateDaypart();
+                    
+                    if (cachedJoltId) {
+                        fetchChecklists(cachedJoltId);
+                        fetchSensors(cachedJoltId); 
+                    } else {
+                        document.getElementById('jolt-list-current').innerHTML = "<li>No Jolt ID</li>";
+                    }
+                }
+
+            } catch (error) {
+                console.error("Error loading data:", error);
+            }
+        }
+
+        // --- 1. CHECKLIST LOGIC ---
+        async function fetchChecklists(locationId) {
+            const listCurrent = document.getElementById('jolt-list-current');
+            const scrollCurrent = document.getElementById('jolt-scroll-current');
+            const listUpcoming = document.getElementById('jolt-list-upcoming');
+            const scrollUpcoming = document.getElementById('jolt-scroll-upcoming');
+
+            if (joltScrollIntervalCurrent) clearInterval(joltScrollIntervalCurrent);
+            if (joltScrollIntervalUpcoming) clearInterval(joltScrollIntervalUpcoming);
+            scrollCurrent.scrollTop = 0; scrollUpcoming.scrollTop = 0;
+
+            const nowSeconds = Math.floor(Date.now() / 1000);
             
-            <!-- SECTION 1: LISTS -->
-            <div class="nav-section">
-                <div class="nav-header">Lists</div>
-                <button id="nav-inspector" class="nav-btn active" onclick="switchTab('inspector')">
-                    <span class="icon">📋</span> <span class="label">List Inspector</span>
-                </button>
-            </div>
+            // 31 DAYS AHEAD WINDOW
+            const pastWindow = nowSeconds - (31 * 24 * 60 * 60); 
+            const futureWindow = nowSeconds + (31 * 24 * 60 * 60); 
+            const threeHoursLater = nowSeconds + (3 * 60 * 60);
+            const expiredCutoff = nowSeconds - (24 * 60 * 60); 
 
-            <!-- SECTION 2: FOOD SAFETY -->
-           <div class="nav-section">
-                <div class="nav-header">Food Safety</div>
-                <button id="nav-grid" class="nav-btn" onclick="switchTab('grid')">
-                    <span class="icon">📊</span> <span class="label">DFSL Grid</span>
-                </button>
-                <button id="nav-report" class="nav-btn" onclick="switchTab('report')">
-                    <span class="icon">📄</span> <span class="label">DFSL Report</span>
-                </button>
-                <button id="nav-probeGrid" class="nav-btn" onclick="switchTab('probeGrid')">
-                    <span class="icon">🌡️</span> <span class="label">Probe & Sensor</span>
-                </button>
-                <button id="nav-sensors" class="nav-btn" onclick="switchTab('sensors')">
-                    <span class="icon">📡</span> <span class="label">Sensors</span>
-                </button>
-            </div>
+            const filter = {
+                deadlineAfterTimestamp: pastWindow, 
+                deadlineBeforeTimestamp: futureWindow, 
+                completionStatus: "INCOMPLETE",
+                isSublist: false
+            };
+            const variables = { filter, mode: { mode: "LOCATION", id: locationId } };
 
-            <!-- SECTION 3: MONTHLY SAFETY -->
-            <div class="nav-section">
-                <div class="nav-header">Monthly Safety</div>
-                <button id="nav-audits" class="nav-btn" onclick="switchTab('audits')">
-                    <span class="icon">🛡️</span> <span class="label">Safety Audits</span>
-                </button>
-                <button id="nav-safety-grid" class="nav-btn" onclick="switchTab('safety-grid')">
-                    <span class="icon">⛑️</span> <span class="label">Safety Grid</span>
-                </button>
+            try {
+                const res = await fetch(JOLT_ENDPOINT, { method: "POST", headers: JOLT_HEADERS, body: JSON.stringify({ query: CHECKLIST_QUERY, variables }) });
+                const payload = await res.json();
+                const lists = payload.data?.listInstances || [];
+                const incomplete = lists.filter(l => !l.completionTimestamp);
+
+                listCurrent.innerHTML = ''; listUpcoming.innerHTML = '';
+
+                if (incomplete.length === 0) {
+                    listCurrent.innerHTML = '<li style="color: #028a0f;">✅ All Caught Up!</li>';
+                    return;
+                }
+
+                incomplete.sort((a, b) => (a.displayTimestamp || 0) - (b.displayTimestamp || 0));
+
+                const currentItems = [];
+                const upcomingItems = [];
+
+                incomplete.forEach(l => {
+                    const disp = l.displayTimestamp || 0;
+                    const dead = l.deadlineTimestamp || 0;
+
+                    if (disp > nowSeconds) {
+                        // UPCOMING
+                        if (disp <= threeHoursLater) upcomingItems.push({ item: l, status: 'upcoming' });
+                    } else {
+                        // CURRENT / LATE
+                        if (dead > 0 && dead < expiredCutoff) return; // Expired > 24h ago
+                        
+                        if (dead > 0 && dead < nowSeconds) currentItems.push({ item: l, status: 'late' });
+                        else currentItems.push({ item: l, status: 'active' });
+                    }
+                });
+
+                if (currentItems.length > 0) currentItems.forEach(obj => renderJoltItem(obj, listCurrent));
+                else listCurrent.innerHTML = '<li style="color: #028a0f;">✅ Complete</li>';
+
+                if (upcomingItems.length > 0) upcomingItems.forEach(obj => renderJoltItem(obj, listUpcoming));
+                else listUpcoming.innerHTML = '<li style="color: #555;">None soon</li>';
+
+                setTimeout(() => {
+                    startJoltScroll(scrollCurrent, listCurrent, 'current');
+                    startJoltScroll(scrollUpcoming, listUpcoming, 'upcoming');
+                }, 1000);
+
+            } catch (err) { console.error("Checklist Error", err); }
+        }
+
+        function renderJoltItem(dataObj, container) {
+            const item = dataObj.item;
+            const status = dataObj.status;
+            let rawName = (item.instanceTitle && item.instanceTitle.trim()) || (item.listTemplate && item.listTemplate.title) || `Checklist ${item.id}`;
+            const li = document.createElement('li');
+            li.className = "jolt-item";
+            if (rawName.includes('🟧')) li.classList.add('jolt-important');
+            const cleanName = rawName.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
+
+            if (status === 'late') { li.classList.add('jolt-late'); li.innerHTML = `⚠️ ${cleanName}`; } 
+            else { li.textContent = cleanName; }
+            container.appendChild(li);
+        }
+
+        // --- 2. SENSOR LOGIC ---
+        async function fetchSensors(locationId) {
+            const grid = document.getElementById("sensor-grid");
+
+            const FILTER_DATA = {
+                locationIds: locationId, 
+                isActive: true,
+                alertTypes: ["WARNING","ALERT"],
+                readingTypes: "TEMPERATURE"
+            };
+
+            const SCENARIO_FILTER = {
+                alertTypes: ["ALERT", "WARNING"],
+                isCurrent: true,
+                readingType: "TEMPERATURE"
+            };
+
+            const variables = { 
+                mode: { mode: "CONTENT_GROUP", id: "Q29udGVudEdyb3VwOjAwMDU4NzViMjYwZDRjNmI2NDdhNjBjZDAxNDFlZDU2" }, 
+                filter: FILTER_DATA,
+                scenarioEventsFilter: SCENARIO_FILTER
+            };
+
+            try {
+                const res = await fetch(JOLT_ENDPOINT, { method: "POST", headers: JOLT_HEADERS, body: JSON.stringify({ query: SENSOR_QUERY, variables }) });
+                const json = await res.json();
+                const sensors = json.data?.sensorDevices || [];
                 
-            </div>
-            <div id="nav-admin-section" class="nav-section" style="display:none;">
-            <div class="nav-header">Admin Controls</div>
-             <button id="nav-admin" class="nav-btn" onclick="switchTab('admin')">
-              <span class="icon">⚙️</span> <span class="label">Control Panel</span>
-             </button>
-            </div>
+                grid.innerHTML = ""; 
+                if(sensors.length > 0) {
+                    sensors.forEach(s => renderSensorCard(s, grid));
+                } else {
+                    grid.innerHTML = "<div style='color:#555; padding:10px;'>No Sensors Found</div>";
+                }
 
-        </nav>
+            } catch (err) { console.error("Sensor Error", err); }
+        }
 
-        <div class="sidebar-footer">
-    <button onclick="handleLogout()" class="config-trigger" style="
-    background-color: #fff; 
-    color: #dc2626; 
-    border: 1px solid #dc2626; 
-    margin-bottom: 10px; 
-    font-weight: bold;">
-    🚪 Log Out
-</button>
-    
-    <button onclick="document.getElementById('configModal').style.display='flex'" class="config-trigger">
-        ⚙️ Settings
-    </button>
-</div>
-<div id="sidebarUserDisplay" style="margin-top: auto; padding: 15px; font-size: 0.9rem; color: #94a3b8; border-top: 1px solid #334155;">
-            Welcome, User
-        </div>
-    </aside>
-    <!-- MAIN CONTENT AREA -->
-    <main class="content-area">
-        
-        <!-- Header for Mobile/Context -->
-        <header class="mobile-header">
-            <h2>Operations Dashboard</h2>
-        </header>
+        function renderSensorCard(sensor, grid) {
+            const displayName = sensor.name.includes("-") ? sensor.name.split("-").slice(1).join("-").trim() : sensor.name.trim();
+            const tempReading = sensor.readings.find(r => r.type === "VOLTAGE" || r.type === "TEMPERATURE");
+            let tempF = "N/A";
+            if (tempReading && !isNaN(tempReading.value)) tempF = ((tempReading.value * 9/5) + 32).toFixed(1) + "°F";
 
-        <!-- VIEW 1: INSPECTOR -->
-<div id="tab-inspector" class="view-content active">
-    <div class="card">
-        <div class="card-header">
-            <h2>List Inspector</h2>
-            <div class="legend-box hide-mobile">
-                <span class="legend-item">🛡️ Score</span>
-                <span class="legend-item"><span style="color:red">🔴</span> Expired</span>
-                <span class="legend-item"><span style="color:gold">🟡</span> Due Today</span>
-            </div>
-        </div>
-
-        <div class="controls-bar">
-            <div class="filter-content">
-                <div class="control-group">
-                    <label for="marketFilter">Market</label>
-                    <select id="marketFilter" onchange="updateOpsGridHierarchy('market')">
-                        <option value="">All Markets</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label for="districtFilter">District</label>
-                    <select id="districtFilter" onchange="updateOpsGridHierarchy('district')">
-                        <option value="">All Districts</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label for="locationSelect">Location</label>
-                    <select id="locationSelect">
-                        <option value="">All Locations</option>
-                    </select>
-                </div>
-                
-                <div class="control-group">
-                    <label for="startDate">Start Date</label>
-                    <input type="date" id="startDate">
-                </div>
-
-                <div class="control-group">
-                    <label for="endDate">End Date</label>
-                    <input type="date" id="endDate">
-                </div>
-
-                <div class="button-group" style="margin-left: 0;">
-                    <button class="btn-primary" onclick="fetchChecklists()">View Lists</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="split-view">
-            <div class="list-sidebar" id="listSidebar">
-                <div class="empty-state">Select filters and click View Lists</div>
-            </div>
+            const offline = sensor.signalStrength === "No Signal";
             
-            <div class="detail-panel mobile-hidden" id="detailView">
-                <div class="mobile-nav-header">
-                    <button class="btn-secondary back-btn" onclick="backToMobileList('listSidebar', 'detailView')">← Back to List</button>
+            // Alert Indicators
+            let tempClass = "";
+            if(offline) {
+                tempClass = "blink";
+            } else if (sensor.scenarioEvents && sensor.scenarioEvents.length > 0) {
+                const tempEvents = sensor.scenarioEvents.filter(ev => ev.isActive && ev.readingType === "TEMPERATURE");
+                if (tempEvents.some(ev => ev.alertType === "ALERT")) tempClass = "temp-critical";
+                else if (tempEvents.some(ev => ev.alertType === "WARNING")) tempClass = "temp-warning";
+            }
+
+            let batHtml = '<span class="battery-good">🔋</span>';
+            if (sensor.batteryLevel <= 20) batHtml = '<span class="battery-low">🪫</span>';
+            else if (sensor.batteryLevel <= 59) batHtml = '<span class="battery-med">🔋</span>';
+
+            const card = document.createElement("div");
+            card.className = "sensor-card";
+            card.innerHTML = `
+                <div>
+                    <h3>${displayName}</h3>
+                    <div class="reading ${tempClass}">${offline ? "—" : tempF}</div>
                 </div>
-                <div class="empty-state">
-                    <h3>Select a list</h3>
-                    <p>Details will appear here</p>
+                <div class="signal-row">
+                    ${batHtml}
+                    <span class="sensor-status-text" style="color: #888;">${offline ? "No Sig" : "On Line"}</span>
                 </div>
-            </div>
-        </div>
-    </div> 
-</div>
+            `;
+            grid.appendChild(card);
+        }
 
+        // --- SCROLL HELPERS ---
+        function startJoltScroll(container, listElement, type) {
+            if (listElement.scrollHeight <= container.clientHeight) return;
+            const clone = listElement.cloneNode(true);
+            clone.id = `jolt-clone-${type}`; 
+            container.appendChild(clone);
+            const speed = 1; 
+            const interval = setInterval(() => {
+                container.scrollTop += speed;
+                if (container.scrollTop >= listElement.scrollHeight) container.scrollTop = 0;
+            }, 50);
+            if (type === 'current') joltScrollIntervalCurrent = interval;
+            else joltScrollIntervalUpcoming = interval;
+        }
 
-        <!-- VIEW 2: DFSL GRID (Renamed) -->
-<div id="tab-grid" class="view-content">
-    <div class="card">
-        <div class="card-header">
-            <h2>DFSL Grid</h2>
-            <div class="legend-box hide-mobile" style="margin-right: auto; margin-left: 20px;">
-                <span class="legend-item">⏱️ Duration</span>
-                <span class="legend-item">🛡️ Integrity</span>
-                <span class="legend-item">⚠️ Corrective Action</span>
-            </div>
-        </div>
-        <div class="controls-bar">
-            <details open class="filter-toggle">
-                <summary class="btn-secondary filter-summary">⚙️ Show Filters</summary>
-                <div class="filter-content">
-                    <div class="control-group">
-                        <label>Date</label>
-                        <input type="date" id="gridDate">
-                    </div>
-                    
-                    <div class="control-group">
-                        <label>Market</label>
-                        <select id="gridMarketFilter" onchange="updateGridFilters('market')">
-                            <option value="">All Markets</option>
-                        </select>
-                    </div>
+        // --- HELPERS (Standard) ---
+        function isAlertActive(config) {
+            if (!config || !config.text) return false;
+            if (!config.startDate && !config.endDate) return true;
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0]; 
+            if (config.startDate && todayStr < config.startDate) return false;
+            if (config.endDate && todayStr > config.endDate) return false;
+            return true;
+        }
 
-                    <div class="control-group">
-                        <label>District</label>
-                        <select id="gridDistrictFilter" onchange="updateGridFilters('district')">
-                            <option value="">All Districts</option>
-                        </select>
-                    </div>
+        function rotateAlert() {
+            if (activeAlerts.length === 0) return;
+            currentAlertIndex = (currentAlertIndex + 1) % activeAlerts.length;
+            const alert = activeAlerts[currentAlertIndex];
+            const alertBox = document.getElementById('alert-section');
+            alertBox.style.opacity = 0;
+            setTimeout(() => {
+                alertBox.innerText = alert.text;
+                if (alert.type === "warning") alertBox.style.backgroundColor = "#b00000"; 
+                else if (alert.type === "info") alertBox.style.backgroundColor = "#005cc8"; 
+                else alertBox.style.backgroundColor = "#028a0f"; 
+                alertBox.style.opacity = 1;
+            }, 200); 
+        }
 
-                    <div class="control-group">
-                        <label>Location</label>
-                        <select id="gridLocationFilter">
-                            <option value="">All Locations</option>
-                        </select>
-                    </div>
+        function updateDaypart() {
+            if (activeSchedule.length === 0) return;
+            const now = new Date();
+            const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+            let text = "PREP / OFF HOURS";
+            let bgColor = "#333"; let textColor = "#fff";
+            for (let i = 0; i < activeSchedule.length; i++) {
+                const phase = activeSchedule[i];
+                const startMin = timeToMinutes(phase.startTime);
+                const endMin = timeToMinutes(phase.endTime);
+                if (currentMinutes >= startMin && currentMinutes < endMin) {
+                    const displayStart = formatTimeDisplay(phase.startTime);
+                    const displayEnd = formatTimeDisplay(phase.endTime);
+                    text = `${phase.icon} ${phase.name} • ${displayStart} - ${displayEnd}`;
+                    bgColor = phase.color; textColor = phase.textColor; break; 
+                }
+            }
+            const dpDiv = document.getElementById('daypart-section');
+            dpDiv.innerText = text; dpDiv.style.backgroundColor = bgColor; dpDiv.style.color = textColor;
+        }
 
-                    <div class="button-group">
-                        <button class="btn-primary" onclick="loadStoreGrid()">Load Grid</button>
-                        <button class="btn-secondary" onclick="printGrid()">Print / Save PDF</button>
-                        <button class="btn-secondary" onclick="exportGridToCSV()">Export CSV</button>
-                    </div>
-                </div>
-            </details>
-        </div>
-        
-        <div class="table-responsive">
-            <div id="gridPrintHeader" class="only-print"></div>
-            <table class="modern-table" id="storeTable">
-                <thead>
-                    <tr>
-                        <th>Store Name</th>
-                        <th>Daypart 1</th>
-                        <th>Daypart 3</th>
-                        <th>Daypart 5</th>
-                        <th>Sanitizer</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td colspan="5" style="text-align:center; padding:30px;">No data loaded.</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+        function checkClosure(datesList) {
+            const overlay = document.getElementById('closed-overlay');
+            if (!datesList || datesList.length === 0) { overlay.style.display = 'none'; return false; }
+            const now = new Date();
+            const year = now.getFullYear(); const month = String(now.getMonth() + 1).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+            if (datesList.includes(todayStr)) { overlay.style.display = 'flex'; return true; } 
+            else { overlay.style.display = 'none'; return false; }
+        }
 
-        <!-- VIEW 3: SAFETY GRID -->
-        <div id="tab-safety-grid" class="view-content">
-            <div class="card">
-                <div class="card-header">
-                    <h2>Safety Audit Grid</h2>
-                </div>
-                <div class="controls-bar">
-                    <details open class="filter-toggle">
-                        <summary class="btn-secondary filter-summary">⚙️ Show Filters</summary>
-                        <div class="filter-content">
-    <div class="control-group">
-        <label>Month</label>
-        <input type="month" id="safetyMonth">
-    </div>
+        function updateDashboardContent(data) {
+            if(data.storeName) document.title = data.storeName;
+            updateList('announcements-list', data.announcements);
+            updateList('events-list', data.events);
+            updateLTOList('lto-list', data.ltos);
+        }
 
-    <div class="control-group">
-    <label>Market</label>
-    <select id="safetyMarketFilter" onchange="updateSafetyFilters('market')">
-        <option value="">All Markets</option>
-    </select>
-</div>
+        function updateList(elementId, items) {
+            const list = document.getElementById(elementId); list.innerHTML = ""; 
+            if (items && items.length > 0) items.forEach(item => { const li = document.createElement("li"); li.innerText = item; list.appendChild(li); });
+            else list.innerHTML = "<li>No updates.</li>";
+        }
 
-<div class="control-group">
-    <label>District</label>
-    <select id="safetyDistrictFilter" onchange="updateSafetyFilters('district')">
-        <option value="">All Districts</option>
-    </select>
-</div>
+        function updateLTOList(elementId, items) {
+            const list = document.getElementById(elementId); list.innerHTML = ""; 
+            if (items && items.length > 0) items.forEach(item => {
+                const li = document.createElement("li"); li.className = "lto-item";
+                if (item.image) { const img = document.createElement("img"); img.src = item.image; img.className = "lto-img"; img.onerror = function() { this.style.display = 'none'; }; li.appendChild(img); }
+                const span = document.createElement("span"); span.innerText = item.text; li.appendChild(span); list.appendChild(li);
+            }); else list.innerHTML = "<li>No upcoming LTOs.</li>";
+        }
 
-<div class="control-group">
-    <label>Location</label>
-    <select id="safetyLocationFilter">
-        <option value="">All Locations</option>
-    </select>
-</div>
-    <div class="button-group">
-        <button class="btn-primary" onclick="loadSafetyGrid()">Load Grid</button>
-        <button class="btn-secondary" onclick="printSafetyGrid()">Print / Save PDF</button>
-        <button class="btn-secondary" onclick="exportSafetyGridCSV()">Export CSV</button>
-    </div>
-</div>
-                    </details>
-                </div>
-                
-                <div class="table-responsive">
-                    <div id="safetyPrintHeader" class="only-print"></div>
-                    <table class="modern-table" id="safetyTable">
-                        <thead>
-                            <tr>
-                                <th>Site</th>
-                                <th>Monthly Safety Audit</th>
-                                <th>Safety Committee Agenda</th>
-                                <th>Complete?</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="4" style="text-align:center; padding:30px;">No data loaded.</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+        function timeToMinutes(timeStr) { const [hours, minutes] = timeStr.split(':').map(Number); return (hours * 60) + minutes; }
+        function formatTimeDisplay(timeStr) {
+            if (timeStr === "24:00") return "12:00 AM";
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const suffix = hours >= 12 ? 'PM' : 'AM'; const displayHour = hours % 12 || 12; const displayMin = minutes.toString().padStart(2, '0'); 
+            return `${displayHour}:${displayMin} ${suffix}`;
+        }
 
-        <!-- VIEW 4: REPORT -->
-        <div id="tab-report" class="view-content">
-            <div class="card">
-                <div class="controls-bar no-print">
-                    <details open class="filter-toggle">
-                        <summary class="btn-secondary filter-summary">⚙️ Show Filters</summary>
-                        <div class="filter-content">
-                            <div class="control-group">
-                                <label>Location</label>
-                                <select id="reportLocationSelect"><option>Loading...</option></select>
-                            </div>
-                            <div class="control-group">
-                                <label>Date</label>
-                                <input type="date" id="reportDate">
-                            </div>
-                            <div class="button-group">
-                                <button class="btn-primary" onclick="generateSingleReport()">Generate</button>
-                                <button class="btn-secondary" onclick="window.print()">Print/PDF</button>
-                            </div>
-                        </div>
-                    </details>
-                </div>
-
-                <div class="report-wrapper">
-                    <div class="report-page" id="reportContent">
-                        <div class="empty-state">Select Location & Date to generate report.</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- VIEW 5: AUDITS -->
-        <div id="tab-audits" class="view-content">
-            <div class="card">
-                <div class="card-header">
-                    <h2>Safety Audits (Detail)</h2>
-                </div>
-                <div class="controls-bar no-print">
-                    <details open class="filter-toggle">
-                        <summary class="btn-secondary filter-summary">⚙️ Show Filters</summary>
-                        <div class="filter-content">
-                            <div class="control-group">
-                                <label>Location</label>
-                                <select id="auditLocationSelect"><option>Loading...</option></select>
-                            </div>
-                            <div class="control-group">
-                                <label>Month</label>
-                                <input type="month" id="auditMonth">
-                            </div>
-                            <div class="button-group">
-    <button class="btn-primary" onclick="fetchAudits()">View Audits</button>
-    <button class="btn-secondary" onclick="window.print()">Print</button>
-</div>
-                        </div>
-                    </details>
-                </div>
-
-                <div class="split-view">
-                    <div class="list-sidebar" id="auditSidebar">
-                        <div class="empty-state">Select location & month</div>
-                    </div>
-                    
-                    <div class="detail-panel mobile-hidden" id="auditDetailView">
-                         <div class="mobile-nav-header">
-                            <button class="btn-secondary back-btn" onclick="backToMobileList('auditSidebar', 'auditDetailView')">← Back to List</button>
-                       </div>
-                        <div class="empty-state">
-                            <h3>Select an audit</h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div id="tab-probeGrid" class="view-content">
-    <div class="card">
-        <div class="card-header">
-            <h2>Probe & Sensor Report</h2>
-        </div>
-        <div class="controls-bar">
-            <details open class="filter-toggle">
-                <summary class="btn-secondary filter-summary">⚙️ Show Filters</summary>
-                <div class="filter-content">
-                    
-                    <div class="control-group">
-                        <label>Start Date</label>
-                        <input type="date" id="probeStartDate_v2">
-                    </div>
-                    <div class="control-group">
-                        <label>End Date</label>
-                        <input type="date" id="probeEndDate_v2">
-                    </div>
-                    
-                    <div class="control-group">
-                        <label>Market</label>
-                        <select id="probeMarketFilter_v2" onchange="updateProbeFilters_v2('market')">
-                            <option value="">All Markets</option>
-                            <option disabled>Loading...</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label>District</label>
-                        <select id="probeDistrictFilter_v2" onchange="updateProbeFilters_v2('district')">
-                            <option value="">All Districts</option>
-                            <option disabled>Loading...</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label>Location</label>
-                        <select id="probeLocationFilter_v2">
-                            <option value="">All Locations</option>
-                            <option disabled>Select District...</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label>&nbsp;</label> <label style="cursor:pointer; display:flex; align-items:center; gap:6px; height:38px; white-space:nowrap; font-weight:600; color:#334155;">
-                            <input type="checkbox" id="probeGroupToggle_v2" style="margin:0; min-width:auto; width:auto;"> Group By Organization
-                        </label>
-                    </div>
-
-                    <div class="button-group">
-                        <button class="btn-primary" onclick="loadProbeGrid_v2()">Load Grid</button>
-                        <button class="btn-secondary" onclick="window.print()">Print / PDF</button>
-                        <button class="btn-secondary" onclick="exportProbeGridCSV_v2()">Export CSV</button>
-                    </div>
-                </div>
-            </details>
-        </div>
-        
-        <div class="table-responsive">
-            <div id="probePrintHeader" class="only-print"></div>
-            <table class="modern-table" id="probeTable">
-                <thead>
-                    <tr>
-                        <th>Site Name</th>
-                        <th>Probe Usage %</th>
-                        <th>Sensor Usage %</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td colspan="3" style="text-align:center; padding:30px;">Select filters and click Load Grid.</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- VIEW 6: SENSORS (NEW) -->
-<div id="tab-sensors" class="view-content">
-    <div class="card">
-        <div class="card-header">
-            <h2>Sensor Status</h2>
-            <div class="legend-box hide-mobile" style="margin-right: auto; margin-left: 20px;">
-                <span class="legend-item">❗ Critical Temp</span>
-                <span class="legend-item">⚠️ Temp Warning</span>
-            </div>
-            <button class="btn-primary" onclick="loadSensorsGrid()">Refresh</button>
-        </div>
-        <div class="controls-bar">
-             <div class="filter-content">
-                <div class="control-group">
-                    <label>Search</label>
-                    <input type="text" id="sensorSearch" placeholder="Search Site..." onkeyup="filterSensorCards()" style="width: 140px;">
-                </div>
-                <div class="control-group">
-                    <label>Status</label>
-                    <select id="sensorStatusFilter" onchange="filterSensorCards()">
-                        <option value="all">Show All</option>
-                        <option value="crit">Critical Alerts</option>
-                        <option value="warn">Warnings</option>
-                        <option value="batt">Battery Issues</option>
-                        <option value="sig">Signal/Disconnect</option>
-                    </select>
-                </div>
-                <div class="control-group">
-                    <label>Market</label>
-                    <select id="sensorMarketFilter" onchange="updateSensorFilters('market')">
-                        <option value="">All Markets</option>
-                    </select>
-                </div>
-                <div class="control-group">
-                    <label>District</label>
-                    <select id="sensorDistrictFilter" onchange="updateSensorFilters('district')">
-                        <option value="">All Districts</option>
-                    </select>
-                </div>
-                <div class="button-group">
-                    <button class="btn-primary" onclick="loadSensorsGrid()">Load Sensors</button>
-                </div>
-             </div>
-        </div>
-        <div id="sensorGridContainer" class="sensor-grid">
-            <div style="grid-column: 1/-1; text-align:center; padding:40px; color:#666;">Select filters and click Load Sensors</div>
-        </div>
-    </div>
-</div>
-
-<div id="tab-admin" class="view-content">
-    <div class="card">
-        <div class="card-header">
-             <h2>User Control Panel</h2>
-            <button class="btn-primary" onclick="openCreateUserModal()">+ New User</button>
-        </div>
-        
-        <datalist id="scopeOptions"></datalist>
-
-        <div class="table-responsive">
-            <table class="modern-table" id="adminUserTable">
-                <thead>
-                    <tr>
-                        <th style="width: 20%;">Name</th>
-                        <th style="width: 25%;">Email</th>
-                        <th style="width: 15%;">Role</th>
-                        <th style="width: 25%;">Scope</th>
-                        <th style="width: 15%;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-
-    </main>
-</div>
-
-<!-- MODALS -->
-<div id="photoModal"><div class="photo-content"><button class="close-photo" onclick="closePhoto()">Close</button><h3 id="photoTitle">Photo Details</h3><div class="photo-placeholder"><span>Image Preview Unavailable via API</span></div><p id="photoCaption" style="font-family:monospace; color:#333; word-break:break-all;"></p></div></div>
-
-<!-- SENSOR DETAIL MODAL -->
-<div id="sensorDetailModal" class="modal" style="display:none; position:fixed; z-index:9000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-    <div class="modal-content" style="background:white; padding:20px; border-radius:12px; width:550px; max-width:95%; max-height:85vh; overflow-y:auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-            <h3 id="sensorModalTitle" style="margin:0;">Site Sensors</h3>
-            <button onclick="document.getElementById('sensorDetailModal').style.display='none'" class="btn-secondary" style="padding:4px 10px;">Close</button>
-        </div>
-        <div id="sensorModalContent">Loading...</div>
-    </div>
-</div>
-
-<div id="loadingOverlay"><div class="loader"></div><h2 id="loadingText">Processing...</h2><p id="loadingSubtext">Please wait.</p></div>
-<div id="system-log" style="display:none;"></div>
-<div id="configModal"><div class="modal-content"><h3>API Connection Settings</h3><p style="font-size: 0.8rem; color: #666;">Adjust these only if connection fails.</p><div class="modal-row"><label>Proxy URL (Worker)</label><input type="text" id="cfg-url" value="https://jolt-proxy.ckuran.workers.dev"></div><div class="modal-row" style="opacity: 0.5;"><label>Auth Token (Managed by Worker)</label><input type="text" id="cfg-token-val" placeholder="(Hidden)" disabled></div><div style="text-align: right; margin-top: 15px;"><button onclick="saveConfig()" class="btn-primary">Save & Reload</button><button onclick="document.getElementById('configModal').style.display='none'" style="padding: 9px;">Cancel</button></div></div></div>
-<div id="loginOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#1e293b; z-index:9999; display:flex; justify-content:center; align-items:center; flex-direction:column; color:white;">
-    <div style="background:white; padding:40px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.5); text-align:center; color:#333; max-width:400px; width:90%;">
-        <h1 style="margin-bottom:10px;">⚡ Jolt Ops</h1>
-        <p style="color:#666; margin-bottom:20px;">Please sign in to access the dashboard.</p>
-        
-        <input type="email" id="txtEmail" placeholder="Email" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:6px;">
-        <input type="password" id="txtPassword" placeholder="Password" style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #ccc; border-radius:6px;">
-        
-        <button onclick="handleLogin()" class="btn-primary" style="width:100%;">Sign In</button>
-        <a href="#" onclick="handleForgotPassword()" style="color:#94a3b8; font-size:0.8rem; margin-top:15px; display:inline-block; text-decoration:none;">Forgot Password?</a>
-        <p id="loginError" style="color:red; margin-top:15px; font-size:0.9rem;"></p>
-    </div>
-</div>
-<div id="settingsModal" class="modal" style="display:none; position:fixed; z-index:9000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-    <div class="modal-content" style="background:white; padding:20px; border-radius:8px; width:300px;">
-        <h3>Change Password</h3>
-        <input type="password" id="newPassword" placeholder="New Password" style="width:100%; padding:8px; margin:10px 0;">
-        <button onclick="changeMyPassword()" class="btn-primary" style="width:100%;">Update Password</button>
-        <button onclick="document.getElementById('settingsModal').style.display='none'" class="btn-secondary" style="width:100%; margin-top:10px;">Cancel</button>
-    </div>
-</div>
-
-<div id="addUserModal" class="modal" style="display:none; position:fixed; z-index:9000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-    <div class="modal-content" style="background:white; padding:20px; border-radius:8px; width:500px; max-width:95%; max-height:90vh; overflow-y:auto;">
-        <h3>Create New User</h3>
-        <h3>Create New User</h3>
-        <input type="text" id="newUserName" placeholder="Full Name" style="width:100%; padding:8px; margin:5px 0;">       
-    
-        <input type="email" id="newUserEmail" placeholder="Email Address" style="width:100%; padding:8px; margin:5px 0;">
-        <input type="text" id="newUserTempPass" value="Wendy2025!" placeholder="Temp Password" style="width:100%; padding:8px; margin:5px 0;">
-        
-        <label>Role:</label>
-        <select id="newUserRole" onchange="toggleNewUserScopeSections()" style="width:100%; padding:8px; margin:5px 0 15px 0;">
-            <option value="store">Store / Site</option> 
-            <option value="market">Market Operator</option>
-            <option value="district">District Manager</option>
-            <option value="admin">Admin</option>
-        </select>
-
-        <div id="section-new-market" class="scope-section" style="display:none;">
-            <div class="scope-header">Select Market(s)</div>
-            <div class="checkbox-list" id="listNewMarkets">Loading...</div>
-        </div>
-
-        <div id="section-new-district" class="scope-section" style="display:none;">
-            <div class="scope-header">Select District(s)</div>
-            <div class="checkbox-list" id="listNewDistricts">Loading...</div>
-        </div>
-
-        <div id="section-new-site" class="scope-section">
-            <div class="scope-header">
-                <span>Select Site(s)</span>
-                <input type="text" placeholder="Search sites..." onkeyup="filterCheckboxList('listNewSites', this.value)" style="font-size:0.7rem; padding:2px;">
-            </div>
-            <div class="checkbox-list" id="listNewSites">Loading...</div>
-        </div>
-        
-        <label style="font-size:0.8rem; display:flex; align-items:center; gap:5px; margin-top:10px;">
-            <input type="checkbox" id="newUserForceReset" checked> Force Password Change on First Login
-        </label>
-
-        <button onclick="createNewUser()" class="btn-primary" style="width:100%; margin-top:15px;">Create User</button>
-        <button onclick="document.getElementById('addUserModal').style.display='none'" class="btn-secondary" style="width:100%; margin-top:10px;">Cancel</button>
-    </div>
-</div>
-<div id="editUserModal" class="modal" style="display:none; position:fixed; z-index:9000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-    <div class="modal-content" style="background:white; padding:20px; border-radius:8px; width:500px; max-width:95%; max-height:90vh; overflow-y:auto;">
-        <h3>Edit User Permissions</h3>
-        
-        <p style="margin-bottom:15px; color:#64748b;">
-            Editing: <strong id="editUserEmailDisplay" style="color:#334155;">...</strong>
-        </p>
-        
-        <label>Full Name:</label>
-        <input type="text" id="editUserName" placeholder="User Full Name" style="width:100%; padding:8px; margin:5px 0 15px 0;">
-
-        <label>Role:</label>
-        <select id="editUserRole" onchange="toggleScopeSections()" style="width:100%; padding:8px; margin:5px 0 15px 0;">
-            <option value="store">Store / Site</option> 
-            <option value="market">Market Operator</option>
-            <option value="district">District Manager</option>
-            <option value="admin">Admin</option>
-        </select>
-
-        <div id="section-market" class="scope-section" style="display:none;">
-            <div class="scope-header">Select Market(s)</div>
-            <div class="checkbox-list" id="listMarkets">Loading...</div>
-        </div>
-
-        <div id="section-district" class="scope-section" style="display:none;">
-            <div class="scope-header">Select District(s)</div>
-            <div class="checkbox-list" id="listDistricts">Loading...</div>
-        </div>
-
-        <div id="section-site" class="scope-section">
-            <div class="scope-header">
-                <span>Select Site(s)</span>
-                <input type="text" placeholder="Search sites..." onkeyup="filterCheckboxList('listSites', this.value)" style="font-size:0.7rem; padding:2px;">
-            </div>
-            <div class="checkbox-list" id="listSites">Loading...</div>
-        </div>
-
-        <div style="display:flex; gap:10px; margin-top:20px;">
-            <button onclick="saveUserChanges()" class="btn-primary" style="flex:1;">Save Changes</button>
-            <button onclick="document.getElementById('editUserModal').style.display='none'" class="btn-secondary" style="flex:1;">Cancel</button>
-        </div>
-    </div>
-</div>
-<script src="auth_logic.js"></script>
-<script src="admin_logic.js"></script>  
-<script src="jolt_logic.js"></script>
+        // --- START SEQUENCE ---
+        fetchData();
+        setInterval(fetchData, REFRESH_RATE);       
+        setInterval(rotateAlert, ALERT_ROTATION_RATE); 
+        setInterval(updateDaypart, 60000);          
+    </script>
 </body>
 </html>
