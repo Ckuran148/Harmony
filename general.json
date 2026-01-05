@@ -22,21 +22,18 @@
         "Watch out for counterfeit money",
         "Remember - Money NEVER leaves the store"
     ],
-    "ltos": [
+    "ltos": [        
         {
-            "text": "Snickerdoodle disengagement 1/12/25",
-            "image": "snickerdoodle.png"
-        },
-        {
-            "text": "Cold Foam disengagement 1/12/25",
-            "image": "cold foam.png"
+            
         }
     ],
     "events": [
-        
+        "Switch to Accenture 1/5/2026",
+        "FSA Cycle 9 is live"        
         
     ]
 }
+
 
 
 
