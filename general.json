@@ -22,18 +22,15 @@
         "Watch out for counterfeit money",
         "Remember - Money NEVER leaves the store"
     ],
-    "ltos": [        
-        {
-            "text": "",
-            "image": ""
-        },
-    ],
+    "ltos": [],      
+    
     "events": [
         "Switch to Accenture 1/5/2026",
         "FSA Cycle 9 is live"        
         
     ]
 }
+
 
 
 
