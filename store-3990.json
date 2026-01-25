@@ -1,0 +1,60 @@
+{
+    "storeName": "Wendy's 3990 - Garden City",
+    "joltLocationId": "TG9jYXRpb246MDAxMzk5MDYyNjQ2ZmY2OWQ5ZDA0NmYwN2QyOTBkNDc=",
+    "alerts": [
+        {}
+    ],
+    "daypartSchedule": [
+        {
+            "name": "DAYPART 1 (Breakfast)",
+            "startTime": "06:30",
+            "endTime": "10:30",
+            "color": "#e6a800",
+            "textColor": "#000",
+            "icon": "\u2615"
+        },
+        {
+            "name": "DAYPART 2 (Lunch Rush)",
+            "startTime": "10:30",
+            "endTime": "14:00",
+            "color": "#b00000",
+            "textColor": "#fff",
+            "icon": "\ud83c\udf54"
+        },
+        {
+            "name": "DAYPART 3 (Afternoon)",
+            "startTime": "14:00",
+            "endTime": "17:00",
+            "color": "#005cc8",
+            "textColor": "#fff",
+            "icon": "\ud83c\udf5f"
+        },
+        {
+            "name": "DAYPART 4 (Dinner)",
+            "startTime": "17:00",
+            "endTime": "20:00",
+            "color": "#b00000",
+            "textColor": "#fff",
+            "icon": "\ud83c\udf7d\ufe0f"
+        },
+        {
+            "name": "DAYPART 5 (After Dinner Snack)",
+            "startTime": "20:00",
+            "endTime": "22:00",
+            "color": "#542a78",
+            "textColor": "#fff",
+            "icon": "\ud83c\udf66"
+        },
+        {
+            "name": "DAYPART 6 (Late Night)",
+            "startTime": "22:00",
+            "endTime": "24:00",
+            "color": "#333",
+            "textColor": "#fff",
+            "icon": "\ud83c\udf19"
+        }
+    ],
+    "announcements": [],
+    "ltos": [],
+    "events": []
+}
