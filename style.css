@@ -1,0 +1,243 @@
+/* --- VISUAL STYLES --- */
+body {
+    background-color: #121212; 
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    height: 100vh;
+    display: grid;
+    /* Alert (12%), Daypart (8%), Content (Flexible), Sensors (20% - Slightly smaller row) */
+    grid-template-rows: 12% 8% 1fr 15%; 
+    gap: 15px;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative; 
+}
+
+/* SITE INDICATOR */
+#site-indicator {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 1.5rem; 
+    color: #ffffff;    
+    font-weight: 900;
+    z-index: 1000;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background-color: rgba(0, 0, 0, 0.6); 
+    padding: 5px 15px;
+    border-radius: 8px;
+    border: 1px solid #555;
+}
+
+/* FULL SCREEN CLOSED OVERLAY */
+#closed-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000;
+    z-index: 9999; 
+    color: #d32f2f;
+    display: flex; 
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+#closed-overlay h1 { font-size: 8rem; margin: 0; text-transform: uppercase; letter-spacing: 10px; }
+#closed-overlay p { font-size: 3rem; color: white; margin-top: 20px; }
+
+/* 1. ALERT BANNER */
+#alert-section {
+    background-color: #028a0f; 
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem; 
+    font-weight: 800;
+    text-transform: uppercase;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    transition: opacity 0.2s ease-in-out, background-color 0.2s; 
+}
+
+/* 2. DAYPART BANNER */
+#daypart-section {
+    background-color: #333;
+    border: 2px solid #555;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #eee;
+}
+
+/* 3. CONTENT COLUMNS */
+.content-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); 
+    gap: 20px;
+    height: 100%;
+    overflow: hidden; 
+}
+
+.card {
+    background-color: #252525;
+    border-radius: 10px;
+    padding: 20px;
+    border-top: 6px solid #0097a7; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; 
+    position: relative;
+}
+
+h2 {
+    margin-top: 0;
+    border-bottom: 1px solid #555;
+    padding-bottom: 15px;
+    font-size: 1.8rem;
+    color: #ddd;
+    z-index: 10;
+    background-color: #252525; 
+}
+
+/* SCROLLABLE LIST CONTAINER */
+.list-container { flex-grow: 1; overflow: hidden; position: relative; }
+ul { list-style-type: none; padding: 0; margin: 0; }
+li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 10px; border-bottom: 1px solid #333; }
+
+/* LTO Image Styling */
+.lto-item { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+.lto-img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; margin-right: 15px; border: 1px solid #555; }
+
+.lto-img-shrink {
+    height: 60px !important;
+    transition: height 0.3s ease;
+}
+
+.lto-countdown {
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    margin-top: 2px;
+    font-family: monospace;
+}
+
+/* JOLT CHECKLIST STYLES */
+.jolt-split-card { display: flex; flex-direction: column; padding: 0; border-top: 6px solid #0088ff; }
+.jolt-section { display: flex; flex-direction: column; overflow: hidden; padding: 15px 20px; position: relative; }
+.jolt-top { flex: 6; border-bottom: 2px solid #444; }
+.jolt-bottom { flex: 4; background-color: #2a2a2a; }
+.jolt-header-small { font-size: 1.4rem; font-weight: bold; color: #aaa; margin-bottom: 10px; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 5px; }
+.jolt-item { color: #ffcccc; }
+.jolt-important { color: #fff !important; background-color: rgba(255, 140, 0, 0.15); border-left: 5px solid #ff8c00; padding-left: 10px; font-weight: bold; }
+.jolt-late { color: #ff5555 !important; font-weight: bold; border-left: 5px solid #ff0000; padding-left: 10px; background-color: rgba(255, 0, 0, 0.1); }
+
+/* --- SENSOR ROW (UPDATED FOR SHORTER HEIGHT) --- */
+#sensor-row-container {
+    overflow: hidden; 
+    background-color: #1e1e1e; 
+    border-radius: 10px;
+    border: 1px solid #333;
+    display: flex; 
+    align-items: stretch; 
+    padding: 5px;
+}
+
+#sensor-grid {
+    width: 100%;
+    display: flex; 
+    gap: 5px; 
+    justify-content: flex-start; 
+}
+
+.sensor-card {
+    background: #252525; 
+    /* REDUCED PADDING: Helps fit content in small height */
+    padding: 4px 8px; 
+    border-radius: 8px;
+    border: 1px solid #444;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Pushes signal row to very bottom */
+    flex: 1; 
+    min-width: 0; 
+    box-sizing: border-box;
+    container-type: inline-size; 
+}
+
+/* UPDATED: Use VH (Viewport Height) so text scales with the row height */
+.sensor-card h3 { 
+    margin: 0; 
+    font-weight: 600; 
+    color: #aaa; 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    /* Max height is 2.5% of screen height */
+    font-size: clamp(0.7rem, 2.5vh, 1rem); 
+}
+
+.reading { 
+    font-weight: 700; 
+    color: #fff; 
+    margin-top: 0;
+    text-align: center;
+    line-height: 1.1;
+    /* Max height is 5% of screen height */
+    font-size: clamp(1.2rem, 5vh, 2.5rem); 
+}
+
+.signal-row { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    border-top: 1px solid #444;
+    padding-top: 2px;
+    /* Max height is 2% of screen height */
+    font-size: clamp(0.6rem, 2vh, 0.9rem); 
+}
+
+/* Standard alerts */
+.temp-warning { color: #e6a800; } 
+.temp-critical { color: #d9534f; animation: blink 1s step-start infinite; } 
+.blink { animation: blink 1s step-start infinite; }
+@keyframes blink { 50% { opacity: 0.5; } }
+.battery-good { color: #28a745; }
+.battery-med  { color: #e6a800; }
+.battery-low  { color: #d9534f; font-weight: 700; }
+
+/* Hide the text "On Line" if card gets too small (< 120px) */
+/* Removed to ensure text visibility */
+/* @container (max-width: 120px) {
+    .sensor-status-text { display: none; }
+    .reading { font-size: 28cqw; }
+} */
+
+/* Stop fonts from getting ridiculously big on wide screens */
+@media (min-width: 100px) {
+    .sensor-card h3 { font-size: clamp(0.8rem, 10cqw, 1.2rem); }
+    .reading { font-size: clamp(1.5rem, 20cqw, 3rem); }
+    .signal-row { font-size: clamp(0.8rem, 8cqw, 1.2rem); }
+}
+
+/* Sensor Alerts */
+.temp-warning { color: #e6a800; } 
+.temp-critical { color: #d9534f; animation: blink 1s step-start infinite; } 
+
+.blink { animation: blink 1s step-start infinite; }
+@keyframes blink { 50% { opacity: 0.5; } }
+
+.battery-good { color: #28a745; }
+.battery-med  { color: #e6a800; }
+.battery-low  { color: #d9534f; font-weight: 700; }

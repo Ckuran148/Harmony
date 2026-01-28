@@ -1,12 +1,12 @@
 {
-    "storeName": "Wendy's 8409 - Barker",
-    "joltLocationId": "TG9jYXRpb246MDAwNTg3NWIyNjBkNGM2ZDNhMTkxOTQ3YWI5MGUyMTI=",
-    "alerts": [
-        {     
-        "text": "Store 8409 - Dashboard",
-        "type": "info"
-    }
+    "storeName": "Wendy's 8412 - Argonne",
+    "joltLocationId": "TG9jYXRpb246MDAwNTg3NWIyNjBkNGM2ZDFhNjJjODI1NWE1MjE4NzY=",
 
+    
+    "alerts": [
+        {
+         
+    }
 ], 
     "daypartSchedule": [
         {
@@ -59,16 +59,16 @@
         }
     ],
     "announcements": [
-        "No one takes a break until food safety is complete - throughout the whole day."
+        
         
     ],
-    "ltos": [], 
+    "ltos": [
+        
+        
+    ],
     "events": [
         
     ]
 }
-
-
-
 
 
