@@ -385,7 +385,8 @@ function renderSensorCard(sensor, grid) {
   card.innerHTML = `
         <div>
             <h3>${displayName}</h3>
-            <div class="reading ${tempClass}">${offline ? "—" : tempF}</div>
+            <div class="reading ${tempClass}">${tempF}</div>
+            ${offline ? '<div class="last-reading-indicator">Last Reading</div>' : ""}
         </div>
         <div class="signal-row">
             ${batHtml}

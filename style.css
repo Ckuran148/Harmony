@@ -213,6 +213,15 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .temp-critical { color: #d9534f; animation: blink 1s step-start infinite; } 
 .blink { animation: blink 1s step-start infinite; }
 @keyframes blink { 50% { opacity: 0.5; } }
+.last-reading-indicator {
+    font-size: clamp(0.5rem, 1.5vh, 0.75rem);
+    color: #e6a800;
+    text-align: center;
+    margin-top: -2px;
+    font-weight: 600;
+    animation: blink 1s step-start infinite;
+}
+
 .battery-good { color: #28a745; }
 .battery-med  { color: #e6a800; }
 .battery-low  { color: #d9534f; font-weight: 700; }
