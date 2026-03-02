@@ -50,19 +50,25 @@
 
         /* Sensor row */
         #sensor-row-container { padding: 4px; }
-        #sensor-grid          { gap: 4px; }
+        /* height: 100% ensures sensor-grid fills the row so cards can stretch into it */
+        #sensor-grid          { gap: 4px; height: 100%; align-items: stretch; }
         .sensor-card          { padding: 4px 6px; }
+
+        /* Auto margins absorb all free space above and below, centering the reading
+           between the sensor name and signal row without disturbing space-between */
+        .reading {
+            margin-top: auto;
+            margin-bottom: auto;
+        }
 
         /* Override the always-on media query so fonts stay readable on narrow cards */
         @media (min-width: 100px) {
             .sensor-card h3 {
-                /* Allow wrapping up to 2 lines so long names aren't silently cut off */
+                /* Full wrapping — show the entire sensor name */
                 white-space: normal;
+                word-break: break-word;
                 overflow: hidden;
-                text-overflow: clip;
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
+                display: block;
                 line-height: 1.15;
                 font-size: clamp(1.1rem, 11cqw, 1.8rem);
             }
