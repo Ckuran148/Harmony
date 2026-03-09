@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 // CONFIGURATION
-const REFRESH_RATE = 30000;
+const REFRESH_RATE = 300000;
 const ALERT_ROTATION_RATE = 5000;
 
 const firebaseConfig = {
