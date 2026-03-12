@@ -11,8 +11,8 @@
         body {
             gap: 8px;
             padding: 10px;
-            /* Give sensors more room (20%), tighten alert/daypart rows */
-            grid-template-rows: 10% 7% 1fr 20%;
+            /* Alert, Daypart, Content (flex), Sensors (compact) */
+            grid-template-rows: 10% 7% 1fr 14%;
         }
 
         #site-indicator {
@@ -43,7 +43,20 @@
             line-height: 1.3;
         }
 
-        .lto-img { width: 60px; height: 60px; }
+        /* LTO items – compact for half-screen */
+        .lto-item { margin-bottom: 6px; padding-bottom: 6px; }
+        .lto-item > div:first-child {
+            min-width: 40px !important;
+            margin-right: 8px !important;
+        }
+        .lto-item > div:first-child > span { font-size: 1.8rem !important; }
+        .lto-img  { width: 40px; height: 40px; margin-right: 8px; }
+        .lto-img-shrink { height: 30px !important; }
+        .lto-countdown { font-size: 0.65rem !important; }
+        #lto-list span:not(.lto-countdown) {
+            font-size: 1rem;
+            word-break: break-word;
+        }
 
         .jolt-section      { padding: 8px 12px; }
         .jolt-header-small { font-size: 1rem; margin-bottom: 5px; padding-bottom: 4px; }
@@ -72,7 +85,7 @@
                 line-height: 1.15;
                 font-size: clamp(1.1rem, 11cqw, 1.8rem);
             }
-            .reading    { font-size: clamp(2.2rem, 23cqw, 4.5rem); }
+            .reading    { font-size: clamp(1.8rem, 18cqw, 3.2rem); }
             .signal-row { font-size: clamp(0.9rem, 9cqw, 1.3rem); }
         }
     </style>
