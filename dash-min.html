@@ -12,7 +12,7 @@
             gap: 8px;
             padding: 10px;
             /* Alert, Daypart, Content (flex), Sensors (compact) */
-            grid-template-rows: 10% 7% 1fr 14%;
+            grid-template-rows: 10% 7% 1fr 17%;
         }
 
         #site-indicator {
@@ -20,6 +20,15 @@
             padding: 3px 10px;
             top: 10px;
             right: 10px;
+        }
+
+        #last-refresh {
+            position: absolute;
+            top: 38px;
+            right: 10px;
+            font-size: 0.75rem;
+            color: #ccc;
+            z-index: 1000;
         }
 
         #alert-section   { font-size: 2rem; }
@@ -54,18 +63,25 @@
         .lto-img-shrink { height: 30px !important; }
         .lto-countdown { font-size: 0.65rem !important; }
         #lto-list span:not(.lto-countdown) {
-            font-size: 1rem;
+            font-size: 0.85rem;
             word-break: break-word;
         }
 
         .jolt-section      { padding: 8px 12px; }
         .jolt-header-small { font-size: 1rem; margin-bottom: 5px; padding-bottom: 4px; }
 
-        /* Sensor row */
-        #sensor-row-container { padding: 4px; }
-        /* height: 100% ensures sensor-grid fills the row so cards can stretch into it */
-        #sensor-grid          { gap: 4px; height: 100%; align-items: stretch; }
-        .sensor-card          { padding: 4px 6px; }
+        /* Sensor row – auto-scroll horizontally when more than 7 cards */
+        #sensor-row-container {
+            padding: 4px;
+            overflow: hidden;
+        }
+        #sensor-grid {
+            gap: 4px;
+            height: 100%;
+            align-items: stretch;
+            flex-wrap: nowrap;
+        }
+        .sensor-card          { padding: 4px 6px; flex: 1 0 calc((100% - 24px) / 7); }
 
         /* Auto margins absorb all free space above and below, centering the reading
            between the sensor name and signal row without disturbing space-between */
@@ -93,6 +109,7 @@
 <body>
 
     <div id="site-indicator">Store: Loading...</div>
+    <div id="last-refresh">Last refresh: --:--</div>
 
     <div id="closed-overlay" style="display: none;">
         <div>
@@ -145,5 +162,84 @@
     }
     </script>
     <script type="module" src="script.js"></script>
+
+    <script>
+    // Horizontal auto-scroll for sensor grid when > 7 cards
+    let sensorScrollInterval = null;
+    let sensorScrollSetupPending = null;
+    let observerPaused = false;
+
+    function setupSensorScroll() {
+        const container = document.getElementById('sensor-row-container');
+        const grid = document.getElementById('sensor-grid');
+        if (!grid || !container) return;
+
+        // Stop any running scroll
+        if (sensorScrollInterval) { clearInterval(sensorScrollInterval); sensorScrollInterval = null; }
+
+        // Pause observer so our own DOM changes don't re-trigger it
+        observerPaused = true;
+
+        // Remove any previously cloned cards
+        grid.querySelectorAll('.sensor-card-clone').forEach(c => c.remove());
+
+        // Only count original (non-clone) cards
+        const cards = Array.from(grid.querySelectorAll('.sensor-card:not(.sensor-card-clone)'));
+        if (cards.length <= 7) {
+            cards.forEach(c => { c.style.minWidth = ''; c.style.maxWidth = ''; c.style.flexShrink = ''; });
+            grid.style.width = '';
+            container.scrollLeft = 0;
+            observerPaused = false;
+            return;
+        }
+
+        // Size each card so exactly 7 fit in the visible area
+        const gap = 4;
+        const cardWidth = (container.clientWidth - gap * 6) / 7;
+        cards.forEach(c => {
+            c.style.minWidth = cardWidth + 'px';
+            c.style.maxWidth = cardWidth + 'px';
+            c.style.flexShrink = '0';
+        });
+
+        // Clone each card and append to the same grid for seamless wrap
+        cards.forEach(c => {
+            const clone = c.cloneNode(true);
+            clone.classList.add('sensor-card-clone');
+            clone.style.minWidth = cardWidth + 'px';
+            clone.style.maxWidth = cardWidth + 'px';
+            clone.style.flexShrink = '0';
+            grid.appendChild(clone);
+        });
+
+        grid.style.width = 'max-content';
+
+        // Total width of original cards (the point at which we seamlessly reset)
+        const originalWidth = cards.length * (cardWidth + gap);
+        container.scrollLeft = 0;
+
+        // Re-enable observer after our changes settle
+        requestAnimationFrame(() => { observerPaused = false; });
+
+        const speed = 1;
+        sensorScrollInterval = setInterval(() => {
+            container.scrollLeft += speed;
+            if (container.scrollLeft >= originalWidth) {
+                container.scrollLeft -= originalWidth;
+            }
+        }, 40);
+    }
+
+    // Observer only fires when we aren't the ones changing the DOM
+    const sensorObserver = new MutationObserver(() => {
+        if (observerPaused) return;
+        if (sensorScrollSetupPending) clearTimeout(sensorScrollSetupPending);
+        sensorScrollSetupPending = setTimeout(setupSensorScroll, 1000);
+    });
+    window.addEventListener('DOMContentLoaded', () => {
+        const grid = document.getElementById('sensor-grid');
+        if (grid) sensorObserver.observe(grid, { childList: true, subtree: true });
+    });
+    </script>
 </body>
 </html>

@@ -180,6 +180,20 @@ async function fetchData() {
   } catch (error) {
     console.error("Error loading data:", error);
   }
+
+  updateRefreshTime();
+}
+
+function updateRefreshTime() {
+  const refreshEl = document.getElementById("last-refresh");
+  if (refreshEl) {
+    const now = new Date();
+    let h = now.getHours();
+    const m = now.getMinutes().toString().padStart(2, '0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    refreshEl.innerText = "Last refresh: " + h + ":" + m + " " + ampm;
+  }
 }
 
 // --- 1. CHECKLIST LOGIC ---
