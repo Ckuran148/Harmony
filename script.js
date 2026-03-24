@@ -53,6 +53,14 @@ let cachedJoltId = null;
 let joltScrollIntervalCurrent = null;
 let joltScrollIntervalUpcoming = null;
 
+// Sleep/Standby State
+let isSleeping = false;
+let sleepCheckInterval = null;
+let fetchInterval = null;
+let alertInterval = null;
+let daypartInterval = null;
+let ltoIntervals = [];
+
 // --- CORE FUNCTION ---
 async function fetchData() {
   if (!storeID) {
@@ -162,6 +170,12 @@ async function fetchData() {
     if (storeData.daypartSchedule) activeSchedule = storeData.daypartSchedule;
     else if (generalData.daypartSchedule)
       activeSchedule = generalData.daypartSchedule;
+
+    // Sleep check: if off-hours, enter standby and stop all polling
+    if (activeSchedule.length > 0 && shouldSleep(activeSchedule) && !isSleeping) {
+      enterSleepMode();
+      return;
+    }
 
     const isClosed = checkClosure(mergedData.closureDates);
 
@@ -652,12 +666,108 @@ function startLTOCountdown(element, targetDate) {
 
   update(); // Initial call
 
-  setInterval(update, 1000);
+  const id = setInterval(update, 1000);
+  ltoIntervals.push(id);
+}
+
+// --- SLEEP/STANDBY LOGIC ---
+
+function getActiveWindow(schedule) {
+  if (!schedule || schedule.length === 0) return null;
+  const sorted = [...schedule].sort(
+    (a, b) => timeToMinutesRaw(a.startTime) - timeToMinutesRaw(b.startTime),
+  );
+  const openMinutes = timeToMinutesRaw(sorted[0].startTime) - 60;
+  const lastEnd = sorted[sorted.length - 1].endTime;
+  const closeMinutes = Math.min(
+    timeToMinutesRaw(lastEnd) + 60,
+    1440 + 60,
+  );
+  return { openMinutes, closeMinutes };
+}
+
+function timeToMinutesRaw(timeStr) {
+  if (timeStr === "24:00") return 1440;
+  const [h, m] = timeStr.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function shouldSleep(schedule) {
+  const window = getActiveWindow(schedule);
+  if (!window) return false; // No schedule → never sleep
+  const now = new Date();
+  const currentMin = now.getHours() * 60 + now.getMinutes();
+  const { openMinutes, closeMinutes } = window;
+
+  if (closeMinutes > 1440) {
+    // Overnight wrap: awake if currentMin >= openMin OR currentMin < (closeMin - 1440)
+    const wrappedClose = closeMinutes - 1440;
+    if (currentMin >= openMinutes || currentMin < wrappedClose) return false;
+    return true;
+  }
+
+  // Normal case: awake if within [openMinutes, closeMinutes)
+  if (currentMin >= openMinutes && currentMin < closeMinutes) return false;
+  return true;
+}
+
+function formatWakeTime(schedule) {
+  const window = getActiveWindow(schedule);
+  if (!window) return "--:--";
+  let wakeMin = window.openMinutes;
+  if (wakeMin < 0) wakeMin += 1440;
+  const h = Math.floor(wakeMin / 60);
+  const m = wakeMin % 60;
+  const suffix = h >= 12 ? "PM" : "AM";
+  const displayH = h % 12 || 12;
+  return `${displayH}:${m.toString().padStart(2, "0")} ${suffix}`;
+}
+
+function enterSleepMode() {
+  // Clear all running intervals
+  if (fetchInterval) { clearInterval(fetchInterval); fetchInterval = null; }
+  if (alertInterval) { clearInterval(alertInterval); alertInterval = null; }
+  if (daypartInterval) { clearInterval(daypartInterval); daypartInterval = null; }
+  if (joltScrollIntervalCurrent) { clearInterval(joltScrollIntervalCurrent); joltScrollIntervalCurrent = null; }
+  if (joltScrollIntervalUpcoming) { clearInterval(joltScrollIntervalUpcoming); joltScrollIntervalUpcoming = null; }
+  ltoIntervals.forEach((id) => clearInterval(id));
+  ltoIntervals = [];
+  if (window.sensorScrollInterval) { clearInterval(window.sensorScrollInterval); window.sensorScrollInterval = null; }
+
+  isSleeping = true;
+
+  // Show standby overlay with wake time
+  const overlay = document.getElementById("standby-overlay");
+  const wakeEl = document.getElementById("standby-wake-time");
+  if (overlay) overlay.style.display = "flex";
+  if (wakeEl) wakeEl.innerText = "Waking at " + formatWakeTime(activeSchedule);
+
+  // Start lightweight 60s check for wake-up
+  sleepCheckInterval = setInterval(() => {
+    if (!shouldSleep(activeSchedule)) {
+      exitSleepMode();
+    }
+  }, 60000);
+}
+
+function exitSleepMode() {
+  if (sleepCheckInterval) { clearInterval(sleepCheckInterval); sleepCheckInterval = null; }
+
+  const overlay = document.getElementById("standby-overlay");
+  if (overlay) overlay.style.display = "none";
+
+  isSleeping = false;
+
+  // Restart everything
+  fetchData();
+  fetchInterval = setInterval(fetchData, REFRESH_RATE);
+  alertInterval = setInterval(rotateAlert, ALERT_ROTATION_RATE);
+  daypartInterval = setInterval(updateDaypart, 60000);
 }
 
 // --- START SEQUENCE ---
 
 fetchData();
-setInterval(fetchData, REFRESH_RATE);
-setInterval(rotateAlert, ALERT_ROTATION_RATE);
-setInterval(updateDaypart, 60000);
+fetchInterval = setInterval(fetchData, REFRESH_RATE);
+alertInterval = setInterval(rotateAlert, ALERT_ROTATION_RATE);
+daypartInterval = setInterval(updateDaypart, 60000);
