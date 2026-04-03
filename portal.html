@@ -100,6 +100,11 @@
             </div>
         </nav>
 
+        <div id="view-as-banner" class="alert alert-warning d-flex justify-content-between align-items-center mb-3 d-none" role="alert">
+            <span><strong>View As Mode:</strong> Viewing portal as <span id="view-as-name"></span> (<span id="view-as-role"></span>)</span>
+            <button class="btn btn-sm btn-dark" id="exit-view-as-btn">Exit View As</button>
+        </div>
+
         <div id="edit-section">
             <div class="row">
                 <div class="col-12 col-md-3">
@@ -269,10 +274,11 @@
                                 <div class="mb-4 card p-3 bg-dark border-secondary">
                                     <label class="form-label fw-bold">3. Organizational Hierarchy</label>
                                     <p class="text-muted small mb-2">Upload the <code>Emails DM Sites CSV</code> to establish the relationship between Operators, Districts, and Stores.</p>
-                                    <div class="input-group">
+                                    <div class="input-group mb-2">
                                         <input type="file" id="file-csv" class="form-control" accept=".csv">
                                         <button class="btn btn-info" id="btn-upload-csv">Import CSV</button>
                                     </div>
+                                    <button class="btn btn-outline-light btn-sm" id="btn-export-csv">Export Current Hierarchy as CSV</button>
                                 </div>
                             </div>
                         </div>
@@ -318,6 +324,7 @@
         let allSites = [];
         let marketList = new Set();
         let districtList = new Set();
+        let realAdminProfile = null; // Stored during "View As" mode
 
         // DOM Elements
         const loginContainer = document.getElementById('login-container');
@@ -596,14 +603,22 @@
                         <small class="text-muted">${u.email}</small><br>
                         <small>Role: ${u.role}</small>
                     </div>
-                    <button class="btn btn-sm btn-outline-info edit-user-btn" 
-                        data-uid="${uid}" 
-                        data-name="${u.name || ''}"
-                        data-email="${u.email}" 
-                        data-role="${u.role || 'user'}"
-                        data-market="${u.assignedMarket || ''}" 
-                        data-district="${u.assignedDistrict || ''}" 
-                        data-site="${u.assignedSite || ''}">Edit</button>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm btn-outline-secondary view-as-btn"
+                            data-name="${u.name || u.email}"
+                            data-role="${u.role || 'user'}"
+                            data-market="${u.assignedMarket || ''}"
+                            data-district="${u.assignedDistrict || ''}"
+                            data-site="${u.assignedSite || ''}">View As</button>
+                        <button class="btn btn-sm btn-outline-info edit-user-btn"
+                            data-uid="${uid}"
+                            data-name="${u.name || ''}"
+                            data-email="${u.email}"
+                            data-role="${u.role || 'user'}"
+                            data-market="${u.assignedMarket || ''}"
+                            data-district="${u.assignedDistrict || ''}"
+                            data-site="${u.assignedSite || ''}">Edit</button>
+                    </div>
                 `;
                 usersList.appendChild(div);
             });
@@ -618,7 +633,7 @@
                     document.getElementById('new-user-email').disabled = true;
                     document.getElementById('password-wrapper').classList.add('d-none');
                     document.getElementById('btn-reset-password').classList.remove('d-none');
-                    
+
                     const roleSelect = document.getElementById('user-role');
                     roleSelect.value = d.role;
                     roleSelect.dispatchEvent(new Event('change'));
@@ -626,11 +641,63 @@
                     if (d.market) document.getElementById('assign-market').value = d.market;
                     if (d.district) document.getElementById('assign-district').value = d.district;
                     if (d.site) document.getElementById('assign-site').value = d.site;
-                    
+
                     document.getElementById('btn-cancel-user').classList.remove('d-none');
                 });
             });
+
+            document.querySelectorAll('.view-as-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const d = e.target.dataset;
+                    viewAsUser(d.name, d.role, d.market, d.district, d.site);
+                });
+            });
         }
+
+        function viewAsUser(name, role, market, district, site) {
+            realAdminProfile = { ...userProfile };
+            userProfile = {
+                ...userProfile,
+                role: role,
+                assignedMarket: market || null,
+                assignedDistrict: district || null,
+                assignedSite: site || null
+            };
+
+            document.getElementById('view-as-name').innerText = name;
+            document.getElementById('view-as-role').innerText = role;
+            document.getElementById('view-as-banner').classList.remove('d-none');
+
+            // Hide admin nav and switch to edit view
+            document.getElementById('nav-admin-li').classList.add('d-none');
+            document.getElementById('edit-section').classList.remove('d-none');
+            document.getElementById('admin-section').classList.add('d-none');
+            document.getElementById('nav-edit').classList.add('active');
+            document.getElementById('nav-admin').classList.remove('active');
+
+            // Clear current editor state
+            document.getElementById('editor-container').classList.add('d-none');
+            document.getElementById('no-site-selected').classList.remove('d-none');
+            selectedSiteId = null;
+
+            loadSites();
+        }
+
+        document.getElementById('exit-view-as-btn').addEventListener('click', () => {
+            if (realAdminProfile) {
+                userProfile = { ...realAdminProfile };
+                realAdminProfile = null;
+            }
+            document.getElementById('view-as-banner').classList.add('d-none');
+            document.getElementById('nav-admin-li').classList.remove('d-none');
+
+            // Clear current editor state
+            document.getElementById('editor-container').classList.add('d-none');
+            document.getElementById('no-site-selected').classList.remove('d-none');
+            selectedSiteId = null;
+
+            loadSites();
+        });
 
         document.getElementById('btn-cancel-user').addEventListener('click', () => {
             resetUserForm();
@@ -771,6 +838,43 @@
             alert('CSV data imported');
             loadSites();
             loadAdminData();
+        });
+
+        document.getElementById('btn-export-csv').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-export-csv');
+            btn.disabled = true;
+            btn.innerText = 'Exporting...';
+            try {
+                const sitesSnap = await getDocs(collection(db, "stores"));
+                const rows = [['SiteID', 'StoreName', 'Market', 'District']];
+                sitesSnap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    rows.push([
+                        docSnap.id,
+                        (d.storeName || '').replace(/,/g, ' '),
+                        (d.market || '').replace(/,/g, ' '),
+                        (d.district || '').replace(/,/g, ' ')
+                    ]);
+                });
+                rows.sort((a, b) => {
+                    if (a[0] === 'SiteID') return -1;
+                    if (b[0] === 'SiteID') return 1;
+                    return (a[2] + a[3] + a[0]).localeCompare(b[2] + b[3] + b[0]);
+                });
+                const csv = rows.map(r => r.join(',')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `hierarchy_export_${new Date().toISOString().slice(0,10)}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                alert('Error exporting: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Export Current Hierarchy as CSV';
+            }
         });
 
         siteSelect.addEventListener('change', (e) => {
@@ -1031,17 +1135,21 @@
             { char: "🆕", label: "New" }, { char: "🔥", label: "Hot" }, { char: "✨", label: "Special" }
         ];
 
+        function buildEmojiPickerOptions(selectedIcon) {
+            const isPreset = !selectedIcon || LTO_EMOJIS.some(e => e.char === selectedIcon);
+            let opts = '<option value="">-- Quick Pick --</option>';
+            LTO_EMOJIS.forEach(e => {
+                opts += `<option value="${e.char}">${e.char} ${e.label}</option>`;
+            });
+            return opts;
+        }
+
         function renderLTOs(items) {
             const container = document.getElementById('ltos-container');
             container.innerHTML = '';
             items.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'card p-2 mb-2 bg-dark border-secondary';
-                
-                let emojiOptions = '<option value="">No Icon</option>';
-                LTO_EMOJIS.forEach(e => {
-                    emojiOptions += `<option value="${e.char}" ${item.icon === e.char ? 'selected' : ''}>${e.char} ${e.label}</option>`;
-                });
 
                 div.innerHTML = `
                     <div class="row g-2 align-items-center">
@@ -1050,8 +1158,8 @@
                         </div>
                         <div class="col-12 col-md-5">
                             <div class="input-group">
-                                <span class="input-group-text bg-dark text-white border-secondary">😊</span>
-                                <select class="form-select lto-emoji">${emojiOptions}</select>
+                                <input type="text" class="form-control lto-emoji text-center" placeholder="🍔" value="${item.icon || ''}" style="max-width: 60px; font-size: 1.3rem;">
+                                <select class="form-select lto-emoji-picker bg-dark text-white border-secondary">${buildEmojiPickerOptions(item.icon)}</select>
                             </div>
                         </div>
                         <div class="col-12 col-md-2 text-end">
@@ -1066,6 +1174,9 @@
                         </div>
                     </div>
                 `;
+                const picker = div.querySelector('.lto-emoji-picker');
+                const input = div.querySelector('.lto-emoji');
+                picker.addEventListener('change', () => { input.value = picker.value; picker.value = ''; });
                 container.appendChild(div);
             });
         }
@@ -1074,11 +1185,6 @@
             const idx = container.children.length;
             const div = document.createElement('div');
             div.className = 'card p-2 mb-2 bg-dark border-secondary';
-            
-            let emojiOptions = '<option value="">No Icon</option>';
-            LTO_EMOJIS.forEach(e => {
-                emojiOptions += `<option value="${e.char}">${e.char} ${e.label}</option>`;
-            });
 
             div.innerHTML = `
                 <div class="row g-2 align-items-center">
@@ -1087,8 +1193,8 @@
                     </div>
                     <div class="col-12 col-md-5">
                         <div class="input-group">
-                            <span class="input-group-text bg-dark text-white border-secondary">😊</span>
-                            <select class="form-select lto-emoji">${emojiOptions}</select>
+                            <input type="text" class="form-control lto-emoji text-center" placeholder="🍔" style="max-width: 60px; font-size: 1.3rem;">
+                            <select class="form-select lto-emoji-picker bg-dark text-white border-secondary">${buildEmojiPickerOptions('')}</select>
                         </div>
                     </div>
                     <div class="col-12 col-md-2 text-end">
@@ -1103,6 +1209,9 @@
                     </div>
                 </div>
             `;
+            const picker = div.querySelector('.lto-emoji-picker');
+            const input = div.querySelector('.lto-emoji');
+            picker.addEventListener('change', () => { input.value = picker.value; picker.value = ''; });
             container.appendChild(div);
         };
 
