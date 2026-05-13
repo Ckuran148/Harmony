@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 // CONFIGURATION
-const REFRESH_RATE = 300000;
+const REFRESH_RATE = 30000;
 const ALERT_ROTATION_RATE = 5000;
 
 const firebaseConfig = {
@@ -138,6 +138,12 @@ async function fetchData() {
         ...(districtData.ltos || []),
         ...(storeData.ltos || []),
       ],
+      disengagements: [
+        ...(generalData.disengagements || []),
+        ...(marketData.disengagements || []),
+        ...(districtData.disengagements || []),
+        ...(storeData.disengagements || []),
+      ],
       events: [
         ...(generalData.events || []),
         ...(marketData.events || []),
@@ -179,20 +185,6 @@ async function fetchData() {
     }
   } catch (error) {
     console.error("Error loading data:", error);
-  }
-
-  updateRefreshTime();
-}
-
-function updateRefreshTime() {
-  const refreshEl = document.getElementById("last-refresh");
-  if (refreshEl) {
-    const now = new Date();
-    let h = now.getHours();
-    const m = now.getMinutes().toString().padStart(2, '0');
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    refreshEl.innerText = "Last refresh: " + h + ":" + m + " " + ampm;
   }
 }
 
@@ -511,7 +503,9 @@ function updateDashboardContent(data) {
   if (data.storeName) document.title = data.storeName;
   updateList("announcements-list", data.announcements);
   updateList("events-list", data.events);
-  updateLTOList("lto-list", data.ltos);
+  const taggedLTOs = (data.ltos || []).map(item => ({ ...item, _type: "lto" }));
+  const taggedDisengagements = (data.disengagements || []).map(item => ({ ...item, _type: "disengagement" }));
+  updateLTOList("lto-list", [...taggedLTOs, ...taggedDisengagements]);
 }
 
 function updateList(elementId, items) {
@@ -552,8 +546,19 @@ function updateLTOList(elementId, items) {
       leftCol.style.alignItems = "center";
       leftCol.style.marginRight = "15px";
       leftCol.style.minWidth = "80px"; // Ensure consistent width
+      leftCol.style.flexShrink = "0";
 
-      if (item.icon) {
+      if (item._type === "disengagement") {
+        const badge = document.createElement("div");
+        badge.innerText = "DISENGAGING";
+        badge.style.fontWeight = "900";
+        badge.style.color = "#ff4444";
+        badge.style.textAlign = "center";
+        badge.style.lineHeight = "1.1";
+        badge.style.width = "100%";
+        badge.style.fontSize = "clamp(0.45rem, 1.8cqi, 0.75rem)";
+        leftCol.appendChild(badge);
+      } else if (item.icon) {
         const spanIcon = document.createElement("span");
         spanIcon.style.fontSize = "3rem"; // Larger icon
         spanIcon.innerText = item.icon;
@@ -577,7 +582,7 @@ function updateLTOList(elementId, items) {
         countdownDiv.style.color = "#ffcc00"; // Gold color for visibility
         countdownDiv.innerText = "Loading...";
         leftCol.appendChild(countdownDiv);
-        startLTOCountdown(countdownDiv, item.countdownDate);
+        startLTOCountdown(countdownDiv, item.countdownDate, item._type || "lto");
       }
 
       li.appendChild(leftCol);
@@ -585,6 +590,9 @@ function updateLTOList(elementId, items) {
       // Text content
       const spanText = document.createElement("span");
       spanText.innerText = item.text;
+      spanText.style.minWidth = "0";
+      spanText.style.overflow = "hidden";
+      spanText.style.wordBreak = "break-word";
       li.appendChild(spanText);
 
       list.appendChild(li);
@@ -611,7 +619,7 @@ function formatTimeDisplay(timeStr) {
   return `${displayHour}:${displayMin} ${suffix}`;
 }
 
-function startLTOCountdown(element, targetDate) {
+function startLTOCountdown(element, targetDate, type) {
   const target = new Date(targetDate).getTime();
 
   const update = () => {
@@ -620,12 +628,14 @@ function startLTOCountdown(element, targetDate) {
     const distance = target - now;
 
     if (distance < 0) {
-      element.innerText = "LIVE!";
-
-      element.style.color = "#00ff00"; // Bright Green
-
+      if (type === "disengagement") {
+        element.innerText = "DISCONTINUED";
+        element.style.color = "#ff4444";
+      } else {
+        element.innerText = "LIVE!";
+        element.style.color = "#00ff00";
+      }
       element.style.fontWeight = "900";
-
       element.style.fontSize = "1.2rem";
 
       return;
