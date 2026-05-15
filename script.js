@@ -2,8 +2,9 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 // CONFIGURATION
-const REFRESH_RATE = 30000;
+const REFRESH_RATE = 300000; // 5 minutes
 const ALERT_ROTATION_RATE = 5000;
+const JOLT_REFRESH_RATE = 300000; // 5 minutes
 
 const firebaseConfig = {
   apiKey: "AIzaSyCIBUjhkYDcSPMAiowao6NUCOdOb_V73m8",
@@ -52,6 +53,7 @@ let cachedJoltId = null;
 // Scroll Timers (Only for Jolt now)
 let joltScrollIntervalCurrent = null;
 let joltScrollIntervalUpcoming = null;
+let lastJoltFetch = 0;
 
 // --- CORE FUNCTION ---
 async function fetchData() {
@@ -175,10 +177,12 @@ async function fetchData() {
       updateDashboardContent(mergedData);
       if (activeSchedule.length > 0) updateDaypart();
 
-      if (cachedJoltId) {
+      const now = Date.now();
+      if (cachedJoltId && now - lastJoltFetch >= JOLT_REFRESH_RATE) {
+        lastJoltFetch = now;
         fetchChecklists(cachedJoltId);
         fetchSensors(cachedJoltId);
-      } else {
+      } else if (!cachedJoltId) {
         document.getElementById("jolt-list-current").innerHTML =
           "<li>No Jolt ID</li>";
       }
