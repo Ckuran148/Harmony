@@ -543,15 +543,12 @@ function updateLTOList(elementId, items) {
       const li = document.createElement("li");
       li.className = "lto-item";
 
-      // Create left column for visual (Icon/Image + Countdown)
-      const leftCol = document.createElement("div");
-      leftCol.style.display = "flex";
-      leftCol.style.flexDirection = "column";
-      leftCol.style.alignItems = "center";
-      leftCol.style.marginRight = "15px";
-      leftCol.style.minWidth = "80px"; // Ensure consistent width
-      leftCol.style.maxWidth = "80px";
-      leftCol.style.flexShrink = "0";
+      // Top row: icon/image on left, text on right
+      const topRow = document.createElement("div");
+      topRow.className = "lto-top-row";
+
+      const iconWrap = document.createElement("div");
+      iconWrap.className = "lto-icon-wrap";
 
       if (item._type === "disengagement") {
         const badge = document.createElement("div");
@@ -560,45 +557,41 @@ function updateLTOList(elementId, items) {
         badge.style.color = "#ff4444";
         badge.style.textAlign = "center";
         badge.style.lineHeight = "1.1";
-        badge.style.width = "100%";
         badge.style.fontSize = "clamp(0.45rem, 1.8cqi, 0.75rem)";
-        leftCol.appendChild(badge);
+        iconWrap.appendChild(badge);
       } else if (item.icon) {
         const spanIcon = document.createElement("span");
-        spanIcon.style.fontSize = "3rem"; // Larger icon
+        spanIcon.className = "lto-icon";
         spanIcon.innerText = item.icon;
-        leftCol.appendChild(spanIcon);
+        iconWrap.appendChild(spanIcon);
       } else if (item.image) {
         const img = document.createElement("img");
         img.src = item.image;
         img.className = "lto-img";
-        if (item.countdownDate) img.classList.add("lto-img-shrink"); // Apply shrink class
         img.onerror = function () {
           this.style.display = "none";
         };
-        leftCol.appendChild(img);
+        iconWrap.appendChild(img);
       }
 
-      // Add countdown if present
+      topRow.appendChild(iconWrap);
+
+      // Text content — gets priority on space
+      const spanText = document.createElement("span");
+      spanText.className = "lto-text";
+      spanText.innerText = item.text;
+      topRow.appendChild(spanText);
+
+      li.appendChild(topRow);
+
+      // Countdown sub-row (full width, only if applicable)
       if (item.countdownDate) {
         const countdownDiv = document.createElement("div");
         countdownDiv.className = "lto-countdown";
-        countdownDiv.style.fontSize = "0.85rem"; // Subtext size
-        countdownDiv.style.color = "#ffcc00"; // Gold color for visibility
         countdownDiv.innerText = "Loading...";
-        leftCol.appendChild(countdownDiv);
+        li.appendChild(countdownDiv);
         startLTOCountdown(countdownDiv, item.countdownDate, item._type || "lto");
       }
-
-      li.appendChild(leftCol);
-
-      // Text content
-      const spanText = document.createElement("span");
-      spanText.innerText = item.text;
-      spanText.style.minWidth = "0";
-      spanText.style.overflow = "hidden";
-      spanText.style.wordBreak = "break-word";
-      li.appendChild(spanText);
 
       list.appendChild(li);
     });
@@ -656,11 +649,10 @@ function startLTOCountdown(element, targetDate, type) {
 
     const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-    if (days > 0) {
-      element.innerHTML = `${days}d ${hours}h<br>${minutes}m ${seconds}s`;
-    } else {
-      element.innerHTML = `${hours}h ${minutes}m<br>${seconds}s`;
-    }
+    let text = "";
+    if (days > 0) text += `${days}d `;
+    text += `${hours}h ${minutes}m ${seconds}s`;
+    element.innerText = text;
   };
 
   update(); // Initial call
