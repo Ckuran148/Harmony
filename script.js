@@ -550,6 +550,7 @@ function updateLTOList(elementId, items) {
       leftCol.style.alignItems = "center";
       leftCol.style.marginRight = "15px";
       leftCol.style.minWidth = "80px"; // Ensure consistent width
+      leftCol.style.maxWidth = "80px";
       leftCol.style.flexShrink = "0";
 
       if (item._type === "disengagement") {
@@ -655,13 +656,11 @@ function startLTOCountdown(element, targetDate, type) {
 
     const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-    let text = "";
-
-    if (days > 0) text += `${days}d `;
-
-    text += `${hours}h ${minutes}m ${seconds}s`;
-
-    element.innerText = text;
+    if (days > 0) {
+      element.innerHTML = `${days}d ${hours}h<br>${minutes}m ${seconds}s`;
+    } else {
+      element.innerHTML = `${hours}h ${minutes}m<br>${seconds}s`;
+    }
   };
 
   update(); // Initial call
