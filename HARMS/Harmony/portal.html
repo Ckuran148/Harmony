@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Harmony Portal - Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #121212; color: white; font-family: 'Segoe UI', sans-serif; }
+        .card { background-color: #252525; color: white; border: 1px solid #444; }
+        .form-control { background-color: #555; border: 1px solid #777; color: #ffffff; font-size: 1.1rem; font-weight: 600; }
+        .form-select { background-color: #555; color: #ffffff; border: 1px solid #777; font-size: 1.1rem; font-weight: 600; }
+        .form-control:focus, .form-select:focus { background-color: #666; border-color: #0097a7; color: #ffffff; box-shadow: 0 0 0 0.25rem rgba(0, 151, 167, 0.25); }
+        .form-control::placeholder { color: #ccc; font-weight: 400; }
+        .form-control:disabled { background-color: #555; color: #ffffff; opacity: 1; border: 1px solid #777; }
+        /* Fix for browser autofill background colors */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #555 inset !important;
+            -webkit-text-fill-color: white !important;
+        }
+        .btn-primary { background-color: #0097a7; border: none; }
+        .btn-primary:hover { background-color: #007c8a; }
+        #portal-content { display: none; }
+        .nav-link { color: #aaa; }
+        .navbar-nav .nav-link { 
+            color: #fff !important; 
+            background-color: #333; 
+            border-radius: 8px; 
+            margin: 5px; 
+            padding: 10px 20px !important;
+            transition: all 0.2s;
+            border: 1px solid #444;
+            text-align: center;
+        }
+        .navbar-nav .nav-link:hover {
+            background-color: #444;
+            transform: translateY(-1px);
+        }
+        .navbar-nav .nav-link.active { 
+            background-color: #0097a7 !important; 
+            color: white !important;
+            border-color: #0097a7;
+            box-shadow: 0 4px 10px rgba(0, 151, 167, 0.3);
+        }
+        .site-card { cursor: pointer; transition: transform 0.2s; }
+        .site-card:hover { transform: scale(1.02); }
+        #login-container, #portal-content, #loading-screen { display: none; }
+    </style>
+</head>
+<body>
+    <div id="loading-screen" class="container mt-5 text-center" style="display: block;">
+        <div class="spinner-border text-info" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted">Checking authentication...</p>
+    </div>
+
+    <div id="login-container" class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-4">
+                <div class="card p-4">
+                    <h2 class="text-center mb-4">Harmony Portal</h2>
+                    <div id="login-error" class="alert alert-danger d-none"></div>
+                    <form id="login-form">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="portal-content" class="container-fluid mt-3">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 px-3 rounded">
+            <div class="container-fluid px-0">
+                <a class="navbar-brand" href="#">Harmony Portal</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item"><a class="nav-link active" href="#" id="nav-edit">Edit Content</a></li>
+                        <li class="nav-item d-none" id="nav-admin-li"><a class="nav-link" href="#" id="nav-admin">Admin</a></li>
+                    </ul>
+                    <div class="d-flex align-items-center mt-3 mt-lg-0">
+                        <span class="navbar-text me-3" id="user-email"></span>
+                        <button class="btn btn-outline-danger btn-sm" id="logout-btn">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div id="view-as-banner" class="alert alert-warning d-flex justify-content-between align-items-center mb-3 d-none" role="alert">
+            <span><strong>View As Mode:</strong> Viewing portal as <span id="view-as-name"></span> (<span id="view-as-role"></span>)</span>
+            <button class="btn btn-sm btn-dark" id="exit-view-as-btn">Exit View As</button>
+        </div>
+
+        <div id="edit-section">
+            <div class="row">
+                <div class="col-12 col-md-3">
+                    <div class="card p-3 mb-3">
+                        <h5>Select Site</h5>
+                        <select id="site-select" class="form-select bg-dark text-white border-secondary mb-3">
+                            <option value="general">Company Level (General)</option>
+                        </select>
+                        <div id="sites-list" class="list-group list-group-flush">
+                            <!-- Sites will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-9">
+                    <div id="editor-container" class="card p-4 d-none">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h3 id="editing-title">Editing General</h3>
+                        </div>
+                        <hr>
+                        
+                        <div class="mb-4">
+                            <h4>Alerts / Info Card</h4>
+                            <div id="alerts-container"></div>
+                            <button class="btn btn-sm btn-outline-success mt-2" onclick="addAlert()">+ Add Alert</button>
+                        </div>
+
+                        <div class="mb-4">
+                            <h4>Announcements</h4>
+                            <div id="announcements-container"></div>
+                            <button class="btn btn-sm btn-outline-success mt-2" onclick="addAnnouncement()">+ Add Announcement</button>
+                        </div>
+
+                        <div class="mb-4">
+                            <h4>LTOs</h4>
+                            <div id="ltos-container"></div>
+                            <button class="btn btn-sm btn-outline-success mt-2" onclick="addLTO()">+ Add LTO</button>
+                        </div>
+
+                        <div class="mb-4">
+                            <h4>Disengagements</h4>
+                            <div id="disengagements-container"></div>
+                            <button class="btn btn-sm btn-outline-success mt-2" onclick="addDisengagement()">+ Add Disengagement</button>
+                        </div>
+
+                        <div class="mb-4">
+                            <h4>Events (This Week)</h4>
+                            <div id="events-container"></div>
+                            <button class="btn btn-sm btn-outline-success mt-2" onclick="addEvent()">+ Add Event</button>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center mb-2">
+                                <h4 class="mb-0 me-3">Daypart Schedule</h4>
+                                <button class="btn btn-sm btn-outline-info collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#daypart-collapse">Show / Hide</button>
+                            </div>
+                            <small class="text-warning d-block mb-2">Note: For midnight, please use <strong>23:59</strong> instead of 24:00 or 00:00.</small>
+                            <div class="collapse" id="daypart-collapse">
+                                <div id="dayparts-container" class="mt-2"></div>
+                                <button class="btn btn-sm btn-outline-success mt-2" onclick="addDaypart()">+ Add Daypart</button>
+                            </div>
+                        </div>
+
+                        <button id="save-btn" class="btn btn-primary btn-lg w-100">Save Changes</button>
+                    </div>
+                    <div id="no-site-selected" class="text-center mt-5">
+                        <p class="text-muted">Select a site to start editing</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-section" class="d-none">
+            <div class="card p-4">
+                <h3>Admin Management</h3>
+                <hr>
+                
+                <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users-content" type="button" role="tab">User Management</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data-content" type="button" role="tab">Data Tools</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="adminTabsContent">
+                    <!-- User Management Tab -->
+                    <div class="tab-pane fade show active" id="users-content" role="tabpanel">
+                        <div class="row">
+                            <div class="col-12 col-md-7 mb-3">
+                                <h5 class="mb-3">All Users</h5>
+                                <div id="users-list-container" class="mb-4 bg-dark border border-secondary rounded p-2" style="max-height: 500px; overflow-y: auto;">
+                                    <!-- Users list from Firestore -->
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-5">
+                                <div class="card p-3 bg-dark mb-4 sticky-top" style="top: 20px; z-index: 1;">
+                                    <h5 id="user-form-title">Create / Edit User</h5>
+                                    <div id="create-user-error" class="alert alert-danger d-none"></div>
+                                    <input type="hidden" id="edit-user-uid">
+                                    <div class="mb-2">
+                                        <label class="form-label">Full Name</label>
+                                        <input type="text" id="new-user-name" class="form-control mb-2" placeholder="e.g. John Doe">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" id="new-user-email" class="form-control mb-2">
+                                    </div>
+                                    <button id="btn-reset-password" class="btn btn-sm btn-outline-warning mb-3 d-none">Send Password Reset Email</button>
+                                    <div id="password-wrapper" class="mb-2">
+                                        <label class="form-label">Temporary Password (Creation only)</label>
+                                        <input type="text" id="new-user-password" class="form-control mb-2" value="Harmony123!">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Role</label>
+                                        <select id="user-role" class="form-select bg-dark text-white border-secondary">
+                                            <option value="user">Unassigned / View Only</option>
+                                            <option value="operator">Operator</option>
+                                            <option value="district">District Manager</option>
+                                            <option value="store">Store Manager</option>
+                                            <option value="admin">Admin</option>
+                                        </select>
+                                        <small class="text-muted d-block mt-1" id="role-help-text"></small>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div id="assign-market-col" class="col-md-12 d-none mb-2">
+                                            <label class="form-label">Operator</label>
+                                            <select id="assign-market" class="form-select bg-dark text-white border-secondary"></select>
+                                        </div>
+                                        <div id="assign-district-col" class="col-md-12 d-none mb-2">
+                                            <label class="form-label">District</label>
+                                            <select id="assign-district" class="form-select bg-dark text-white border-secondary"></select>
+                                        </div>
+                                        <div id="assign-site-col" class="col-md-12 d-none mb-2">
+                                            <label class="form-label">Site</label>
+                                            <select id="assign-site" class="form-select bg-dark text-white border-secondary"></select>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-primary w-100" id="btn-save-user">Save User</button>
+                                        <button class="btn btn-secondary d-none w-100" id="btn-cancel-user">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Tools Tab -->
+                    <div class="tab-pane fade" id="data-content" role="tabpanel">
+                        <div class="row">
+                            <div class="col-12 col-md-8">
+                                <h4>Data Tools</h4>
+                                <p class="text-muted small">These tools are for the <strong>Initial Setup</strong> of your database. Use them to migrate your existing files into Firestore.</p>
+                                
+                                <div class="mb-4 card p-3 bg-dark border-secondary">
+                                    <label class="form-label fw-bold">1. Company Global Data</label>
+                                    <p class="text-muted small mb-2">Upload <code>general.json</code> to set company-wide announcements, LTOs, and the default daypart schedule.</p>
+                                    <div class="input-group">
+                                        <input type="file" id="file-general" class="form-control" accept=".json">
+                                        <button class="btn btn-warning" id="btn-upload-general">Upload</button>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4 card p-3 bg-dark border-secondary">
+                                    <label class="form-label fw-bold">2. Store Specific Data</label>
+                                    <p class="text-muted small mb-2">Upload all <code>store-XXXX.json</code> files. This links Store IDs to their Jolt IDs and imports site-specific content.</p>
+                                    <div class="input-group">
+                                        <input type="file" id="file-stores" class="form-control" accept=".json" multiple>
+                                        <button class="btn btn-warning" id="btn-upload-stores">Upload</button>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4 card p-3 bg-dark border-secondary">
+                                    <label class="form-label fw-bold">3. Organizational Hierarchy</label>
+                                    <p class="text-muted small mb-2">Upload the <code>Emails DM Sites CSV</code> to establish the relationship between Operators, Districts, and Stores.</p>
+                                    <div class="input-group mb-2">
+                                        <input type="file" id="file-csv" class="form-control" accept=".csv">
+                                        <button class="btn btn-info" id="btn-upload-csv">Import CSV</button>
+                                    </div>
+                                    <button class="btn btn-outline-light btn-sm" id="btn-export-csv">Export Current Hierarchy as CSV</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="importmap">
+    {
+        "imports": {
+            "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+            "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+            "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import { initializeApp, deleteApp } from "firebase/app";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, writeBatch } from "firebase/firestore";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCIBUjhkYDcSPMAiowao6NUCOdOb_V73m8",
+            authDomain: "harmony9503.firebaseapp.com",
+            projectId: "harmony9503",
+            storageBucket: "harmony9503.firebasestorage.app",
+            messagingSenderId: "244278361492",
+            appId: "1:244278361492:web:a18a7a5a6351a26f9ea381",
+            measurementId: "G-47T5G80056"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let userProfile = null;
+        let selectedSiteId = null;
+        let allSites = [];
+        let marketList = new Set();
+        let districtList = new Set();
+        let realAdminProfile = null; // Stored during "View As" mode
+
+        // DOM Elements
+        const loginContainer = document.getElementById('login-container');
+        const portalContent = document.getElementById('portal-content');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const userEmailSpan = document.getElementById('user-email');
+        const logoutBtn = document.getElementById('logout-btn');
+        const siteSelect = document.getElementById('site-select');
+        const editorContainer = document.getElementById('editor-container');
+        const noSiteSelected = document.getElementById('no-site-selected');
+        const editingTitle = document.getElementById('editing-title');
+
+        // Navigation
+        document.getElementById('nav-edit').addEventListener('click', () => {
+            document.getElementById('edit-section').classList.remove('d-none');
+            document.getElementById('admin-section').classList.add('d-none');
+            document.getElementById('nav-edit').classList.add('active');
+            document.getElementById('nav-admin').classList.remove('active');
+        });
+
+        document.getElementById('nav-admin').addEventListener('click', () => {
+            document.getElementById('edit-section').classList.add('d-none');
+            document.getElementById('admin-section').classList.remove('d-none');
+            document.getElementById('nav-edit').classList.remove('active');
+            document.getElementById('nav-admin').classList.add('active');
+        });
+
+        // Auth Listener
+        onAuthStateChanged(auth, async (user) => {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (user) {
+                currentUser = user;
+                let userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    userProfile = userDoc.data();
+                } else {
+                    // Create basic profile for first-time login
+                    userProfile = { 
+                        email: user.email,
+                        role: 'user',
+                        assignedMarket: null,
+                        assignedDistrict: null,
+                        assignedSite: null
+                    };
+                    await setDoc(doc(db, "users", user.uid), userProfile);
+                }
+                
+                if (userProfile.role === 'admin') {
+                    document.getElementById('nav-admin-li').classList.remove('d-none');
+                    loadAdminData();
+                } else {
+                    document.getElementById('nav-admin-li').classList.add('d-none');
+                    // Ensure non-admins are kicked out of admin section if they somehow got there
+                    if (!document.getElementById('admin-section').classList.contains('d-none')) {
+                        document.getElementById('edit-section').classList.remove('d-none');
+                        document.getElementById('admin-section').classList.add('d-none');
+                        document.getElementById('nav-edit').classList.add('active');
+                        document.getElementById('nav-admin').classList.remove('active');
+                    }
+                }
+                
+                userEmailSpan.innerText = user.email;
+                loadingScreen.style.display = 'none';
+                loginContainer.style.display = 'none';
+                portalContent.style.display = 'block';
+                loadSites();
+            } else {
+                currentUser = null;
+                userProfile = null;
+                loadingScreen.style.display = 'none';
+                loginContainer.style.display = 'block';
+                portalContent.style.display = 'none';
+            }
+        });
+
+        // Login
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loginError.classList.add('d-none');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                loginError.innerText = error.message;
+                loginError.classList.remove('d-none');
+            }
+        });
+
+        // Logout
+        logoutBtn.addEventListener('click', () => signOut(auth));
+
+        // Load Sites based on permissions
+        async function loadSites() {
+            const sitesSnap = await getDocs(collection(db, "stores"));
+            allSites = [];
+            siteSelect.innerHTML = '<option value="">-- Select a Site --</option>';
+            
+            const markets = new Set();
+            const districts = new Set();
+            const marketToDistricts = {}; // Market -> Set of Districts
+
+            sitesSnap.forEach(doc => {
+                const data = doc.data();
+                if (!data.hasData) return; // Only show sites with JSON data
+
+                const siteId = doc.id;
+                const m = data.market;
+                const d = data.district;
+
+                if (m) markets.add(m);
+                if (d) districts.add(d);
+                
+                if (m && d) {
+                    if (!marketToDistricts[m]) marketToDistricts[m] = new Set();
+                    marketToDistricts[m].add(d);
+                }
+                
+                allSites.push({id: siteId, ...data});
+            });
+
+            if (userProfile.role === 'admin') {
+                const opt = document.createElement('option');
+                opt.value = 'general';
+                opt.innerText = 'Company Level (General)';
+                siteSelect.appendChild(opt);
+
+                markets.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = `market:${m}`;
+                    opt.innerText = `Operator: ${m}`;
+                    siteSelect.appendChild(opt);
+                });
+
+                districts.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = `district:${d}`;
+                    opt.innerText = `District: ${d}`;
+                    siteSelect.appendChild(opt);
+                });
+
+                allSites.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.innerText = `Store: ${s.id}`;
+                    siteSelect.appendChild(opt);
+                });
+            } else {
+                // Restricted User
+                if (userProfile.assignedMarket) {
+                    const m = userProfile.assignedMarket;
+                    const opt = document.createElement('option');
+                    opt.value = `market:${m}`;
+                    opt.innerText = `Operator: ${m}`;
+                    siteSelect.appendChild(opt);
+
+                    // Districts in this market
+                    if (marketToDistricts[m]) {
+                        marketToDistricts[m].forEach(d => {
+                            const optD = document.createElement('option');
+                            optD.value = `district:${d}`;
+                            optD.innerText = `District: ${d}`;
+                            siteSelect.appendChild(optD);
+                        });
+                    }
+
+                    // Stores in this market
+                    allSites.filter(s => s.market === m).forEach(s => {
+                        const optS = document.createElement('option');
+                        optS.value = s.id;
+                        optS.innerText = `Store: ${s.id}`;
+                        siteSelect.appendChild(optS);
+                    });
+                } else if (userProfile.assignedDistrict) {
+                    const d = userProfile.assignedDistrict;
+                    const opt = document.createElement('option');
+                    opt.value = `district:${d}`;
+                    opt.innerText = `District: ${d}`;
+                    siteSelect.appendChild(opt);
+
+                    // Stores in this district
+                    allSites.filter(s => s.district === d).forEach(s => {
+                        const optS = document.createElement('option');
+                        optS.value = s.id;
+                        optS.innerText = `Store: ${s.id}`;
+                        siteSelect.appendChild(optS);
+                    });
+                } else if (userProfile.assignedSite) {
+                    const sId = userProfile.assignedSite;
+                    const s = allSites.find(x => x.id === sId);
+                    if (s) {
+                        const optS = document.createElement('option');
+                        optS.value = s.id;
+                        optS.innerText = `Store: ${s.id}`;
+                        siteSelect.appendChild(optS);
+                    }
+                }
+            }
+        }
+
+        // Role visibility logic
+        document.getElementById('user-role').addEventListener('change', (e) => {
+            const role = e.target.value;
+            const mCol = document.getElementById('assign-market-col');
+            const dCol = document.getElementById('assign-district-col');
+            const sCol = document.getElementById('assign-site-col');
+            const helpText = document.getElementById('role-help-text');
+
+            mCol.classList.add('d-none');
+            dCol.classList.add('d-none');
+            sCol.classList.add('d-none');
+            helpText.innerText = "";
+
+            if (role === 'user') helpText.innerText = "Can login but cannot edit any sites.";
+            if (role === 'operator') { mCol.classList.remove('d-none'); helpText.innerText = "Can edit all sites in their assigned Operator group."; }
+            if (role === 'district') { dCol.classList.remove('d-none'); helpText.innerText = "Can edit all sites in their assigned District."; }
+            if (role === 'store') { sCol.classList.remove('d-none'); helpText.innerText = "Can only edit their specific Store."; }
+            if (role === 'admin') helpText.innerText = "Full access to all settings and user management.";
+        });
+
+        async function loadAdminData() {
+            const sitesSnap = await getDocs(collection(db, "stores"));
+            allSites = [];
+            const mSet = new Set();
+            const dSet = new Set();
+            
+            const assignMarket = document.getElementById('assign-market');
+            const assignDistrict = document.getElementById('assign-district');
+            const assignSite = document.getElementById('assign-site');
+
+            assignMarket.innerHTML = '<option value="">-- Select Operator --</option>';
+            assignDistrict.innerHTML = '<option value="">-- Select District --</option>';
+            assignSite.innerHTML = '<option value="">-- Select Site --</option>';
+
+            sitesSnap.forEach(docSnap => {
+                const data = docSnap.data();
+                if (!data.hasData) return; // Only process sites with uploaded JSONs
+
+                allSites.push({ id: docSnap.id, ...data });
+                if (data.market) mSet.add(data.market);
+                if (data.district) dSet.add(data.district);
+                
+                const optS = document.createElement('option');
+                optS.value = docSnap.id;
+                optS.innerText = docSnap.id;
+                assignSite.appendChild(optS);
+            });
+
+            mSet.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.innerText = m;
+                assignMarket.appendChild(opt);
+            });
+
+            dSet.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.innerText = d;
+                assignDistrict.appendChild(opt);
+            });
+
+            // Load Users
+            const usersSnap = await getDocs(collection(db, "users"));
+            const usersList = document.getElementById('users-list-container');
+            usersList.innerHTML = '';
+            usersSnap.forEach(docSnap => {
+                const u = docSnap.data();
+                const uid = docSnap.id;
+                const div = document.createElement('div');
+                div.className = 'card p-2 mb-2 bg-dark border-secondary d-flex flex-row justify-content-between align-items-center';
+                div.innerHTML = `
+                    <div class="text-start">
+                        <strong>${u.name || 'No Name'}</strong><br>
+                        <small class="text-muted">${u.email}</small><br>
+                        <small>Role: ${u.role}</small>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm btn-outline-secondary view-as-btn"
+                            data-name="${u.name || u.email}"
+                            data-role="${u.role || 'user'}"
+                            data-market="${u.assignedMarket || ''}"
+                            data-district="${u.assignedDistrict || ''}"
+                            data-site="${u.assignedSite || ''}">View As</button>
+                        <button class="btn btn-sm btn-outline-info edit-user-btn"
+                            data-uid="${uid}"
+                            data-name="${u.name || ''}"
+                            data-email="${u.email}"
+                            data-role="${u.role || 'user'}"
+                            data-market="${u.assignedMarket || ''}"
+                            data-district="${u.assignedDistrict || ''}"
+                            data-site="${u.assignedSite || ''}">Edit</button>
+                    </div>
+                `;
+                usersList.appendChild(div);
+            });
+
+            document.querySelectorAll('.edit-user-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const d = e.target.dataset;
+                    document.getElementById('user-form-title').innerText = 'Edit User';
+                    document.getElementById('edit-user-uid').value = d.uid;
+                    document.getElementById('new-user-name').value = d.name;
+                    document.getElementById('new-user-email').value = d.email;
+                    document.getElementById('new-user-email').disabled = true;
+                    document.getElementById('password-wrapper').classList.add('d-none');
+                    document.getElementById('btn-reset-password').classList.remove('d-none');
+
+                    const roleSelect = document.getElementById('user-role');
+                    roleSelect.value = d.role;
+                    roleSelect.dispatchEvent(new Event('change'));
+
+                    if (d.market) document.getElementById('assign-market').value = d.market;
+                    if (d.district) document.getElementById('assign-district').value = d.district;
+                    if (d.site) document.getElementById('assign-site').value = d.site;
+
+                    document.getElementById('btn-cancel-user').classList.remove('d-none');
+                });
+            });
+
+            document.querySelectorAll('.view-as-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const d = e.target.dataset;
+                    viewAsUser(d.name, d.role, d.market, d.district, d.site);
+                });
+            });
+        }
+
+        function viewAsUser(name, role, market, district, site) {
+            realAdminProfile = { ...userProfile };
+            userProfile = {
+                ...userProfile,
+                role: role,
+                assignedMarket: market || null,
+                assignedDistrict: district || null,
+                assignedSite: site || null
+            };
+
+            document.getElementById('view-as-name').innerText = name;
+            document.getElementById('view-as-role').innerText = role;
+            document.getElementById('view-as-banner').classList.remove('d-none');
+
+            // Hide admin nav and switch to edit view
+            document.getElementById('nav-admin-li').classList.add('d-none');
+            document.getElementById('edit-section').classList.remove('d-none');
+            document.getElementById('admin-section').classList.add('d-none');
+            document.getElementById('nav-edit').classList.add('active');
+            document.getElementById('nav-admin').classList.remove('active');
+
+            // Clear current editor state
+            document.getElementById('editor-container').classList.add('d-none');
+            document.getElementById('no-site-selected').classList.remove('d-none');
+            selectedSiteId = null;
+
+            loadSites();
+        }
+
+        document.getElementById('exit-view-as-btn').addEventListener('click', () => {
+            if (realAdminProfile) {
+                userProfile = { ...realAdminProfile };
+                realAdminProfile = null;
+            }
+            document.getElementById('view-as-banner').classList.add('d-none');
+            document.getElementById('nav-admin-li').classList.remove('d-none');
+
+            // Clear current editor state
+            document.getElementById('editor-container').classList.add('d-none');
+            document.getElementById('no-site-selected').classList.remove('d-none');
+            selectedSiteId = null;
+
+            loadSites();
+        });
+
+        document.getElementById('btn-cancel-user').addEventListener('click', () => {
+            resetUserForm();
+        });
+
+        document.getElementById('btn-reset-password').addEventListener('click', async () => {
+            const email = document.getElementById('new-user-email').value;
+            if (confirm(`Send password reset email to ${email}?`)) {
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                    alert('Password reset email sent!');
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                }
+            }
+        });
+
+        function resetUserForm() {
+            document.getElementById('user-form-title').innerText = 'Create User';
+            document.getElementById('edit-user-uid').value = '';
+            document.getElementById('new-user-name').value = '';
+            document.getElementById('new-user-email').value = '';
+            document.getElementById('new-user-email').disabled = false;
+            document.getElementById('password-wrapper').classList.remove('d-none');
+            document.getElementById('btn-reset-password').classList.add('d-none');
+            
+            document.getElementById('user-role').value = 'user';
+            document.getElementById('user-role').dispatchEvent(new Event('change'));
+            
+            document.getElementById('assign-market').value = '';
+            document.getElementById('assign-district').innerHTML = '';
+            document.getElementById('assign-site').innerHTML = '';
+            
+            document.getElementById('btn-cancel-user').classList.add('d-none');
+        }
+
+        // Admin: Save User (Create or Update)
+        document.getElementById('btn-save-user').addEventListener('click', async () => {
+            const uid = document.getElementById('edit-user-uid').value;
+            const name = document.getElementById('new-user-name').value;
+            const email = document.getElementById('new-user-email').value;
+            const password = document.getElementById('new-user-password').value;
+            const role = document.getElementById('user-role').value;
+            const market = document.getElementById('assign-market').value;
+            const district = document.getElementById('assign-district').value;
+            const site = document.getElementById('assign-site').value;
+            const errorDiv = document.getElementById('create-user-error');
+            
+            errorDiv.classList.add('d-none');
+
+            const userData = {
+                name: name || null,
+                role: role,
+                assignedMarket: (role !== 'admin' && role !== 'user') ? market : null,
+                assignedDistrict: (role === 'district' || role === 'store') ? district : null,
+                assignedSite: (role === 'store') ? site : null
+            };
+
+            try {
+                if (uid) {
+                    await updateDoc(doc(db, "users", uid), userData);
+                    alert('User updated');
+                } else {
+                    if (!email || !password) return alert('Email and Password required');
+                    const secondaryApp = initializeApp(firebaseConfig, "Secondary");
+                    const secondaryAuth = getAuth(secondaryApp);
+                    const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+                    const newUser = userCredential.user;
+
+                    await setDoc(doc(db, "users", newUser.uid), {
+                        email: email,
+                        ...userData
+                    });
+
+                    await signOut(secondaryAuth);
+                    await deleteApp(secondaryApp);
+                    alert('User created successfully');
+                }
+                resetUserForm();
+                loadAdminData();
+            } catch (error) {
+                errorDiv.innerText = error.message;
+                errorDiv.classList.remove('d-none');
+            }
+        });
+
+        // Migration Tools
+        document.getElementById('btn-upload-general').addEventListener('click', async () => {
+            const file = document.getElementById('file-general').files[0];
+            if (!file) return;
+            const text = await file.text();
+            const data = JSON.parse(text);
+            await setDoc(doc(db, "company", "general"), data);
+            alert('General data uploaded');
+        });
+
+        document.getElementById('btn-upload-stores').addEventListener('click', async () => {
+            const files = document.getElementById('file-stores').files;
+            if (files.length === 0) return;
+            for (const file of files) {
+                const match = file.name.match(/store-(\d+)\.json/);
+                if (match) {
+                    const storeId = match[1];
+                    const text = await file.text();
+                    const data = JSON.parse(text);
+                    data.hasData = true; // Mark as having uploaded JSON
+                    await setDoc(doc(db, "stores", storeId), data, { merge: true });
+                }
+            }
+            alert('Store data uploaded');
+            loadSites();
+        });
+
+        document.getElementById('btn-upload-csv').addEventListener('click', async () => {
+            const file = document.getElementById('file-csv').files[0];
+            if (!file) return;
+            const text = await file.text();
+            const lines = text.split('\n');
+            const batch = writeBatch(db);
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',');
+                if (cols.length < 4) continue;
+                const siteId = cols[0].trim();
+                const storeName = cols[1].trim();
+                const market = cols[2].trim();
+                const district = cols[3].trim();
+                
+                if (siteId) {
+                    const ref = doc(db, "stores", siteId);
+                    batch.set(ref, {
+                        market,
+                        district,
+                        storeName
+                    }, { merge: true });
+                }
+            }
+            await batch.commit();
+            alert('CSV data imported');
+            loadSites();
+            loadAdminData();
+        });
+
+        document.getElementById('btn-export-csv').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-export-csv');
+            btn.disabled = true;
+            btn.innerText = 'Exporting...';
+            try {
+                const sitesSnap = await getDocs(collection(db, "stores"));
+                const rows = [['SiteID', 'StoreName', 'Market', 'District']];
+                sitesSnap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    rows.push([
+                        docSnap.id,
+                        (d.storeName || '').replace(/,/g, ' '),
+                        (d.market || '').replace(/,/g, ' '),
+                        (d.district || '').replace(/,/g, ' ')
+                    ]);
+                });
+                rows.sort((a, b) => {
+                    if (a[0] === 'SiteID') return -1;
+                    if (b[0] === 'SiteID') return 1;
+                    return (a[2] + a[3] + a[0]).localeCompare(b[2] + b[3] + b[0]);
+                });
+                const csv = rows.map(r => r.join(',')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `hierarchy_export_${new Date().toISOString().slice(0,10)}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                alert('Error exporting: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Export Current Hierarchy as CSV';
+            }
+        });
+
+        siteSelect.addEventListener('change', (e) => {
+            selectedSiteId = e.target.value;
+            if (selectedSiteId) {
+                loadSiteData(selectedSiteId);
+                editorContainer.classList.remove('d-none');
+                noSiteSelected.classList.add('d-none');
+                editingTitle.innerText = `Editing ${selectedSiteId}`;
+            } else {
+                editorContainer.classList.add('d-none');
+                noSiteSelected.classList.remove('d-none');
+            }
+        });
+
+        async function loadSiteData(id) {
+            let data;
+            if (id === 'general') {
+                const docSnap = await getDoc(doc(db, "company", "general"));
+                data = docSnap.exists() ? docSnap.data() : {};
+            } else if (id.startsWith('market:')) {
+                const marketName = id.replace('market:', '');
+                const docSnap = await getDoc(doc(db, "markets", marketName));
+                data = docSnap.exists() ? docSnap.data() : {};
+            } else if (id.startsWith('district:')) {
+                const districtName = id.replace('district:', '');
+                const docSnap = await getDoc(doc(db, "districts", districtName));
+                data = docSnap.exists() ? docSnap.data() : {};
+            } else {
+                const docSnap = await getDoc(doc(db, "stores", id));
+                data = docSnap.exists() ? docSnap.data() : {};
+            }
+
+            renderAlerts(data.alerts || []);
+            renderAnnouncements(data.announcements || []);
+            renderLTOs(data.ltos || []);
+            renderDisengagements(data.disengagements || []);
+            renderEvents(data.events || []);
+            renderDayparts(data.daypartSchedule || []);
+        }
+
+        // Rendering Functions (keep as they were)
+        function normalizeHex(hex) {
+            if (!hex) return '#333333';
+            if (hex.length === 4) {
+                return '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+            }
+            return hex;
+        }
+
+        function normalizeTime(timeStr) {
+            if (timeStr === '24:00') return '23:59';
+            return timeStr;
+        }
+
+        function renderDayparts(items) {
+            const container = document.getElementById('dayparts-container');
+            container.innerHTML = '';
+            items.forEach(dp => {
+                const div = document.createElement('div');
+                div.className = 'card p-2 mb-2 bg-dark border-secondary';
+                div.innerHTML = `
+                    <div class="row g-2">
+                        <div class="col-12 col-md-3">
+                            <input type="text" class="form-control dp-name" placeholder="Name" value="${dp.name}">
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <input type="time" class="form-control dp-start" value="${normalizeTime(dp.startTime)}">
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <input type="time" class="form-control dp-end" value="${normalizeTime(dp.endTime)}">
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <input type="color" class="form-control form-control-color w-100 dp-color" value="${normalizeHex(dp.color)}">
+                        </div>
+                        <div class="col-6 col-md-1">
+                            <input type="text" class="form-control dp-icon" placeholder="Icon" value="${dp.icon || ''}">
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <button class="btn btn-sm btn-danger w-100" onclick="this.parentElement.parentElement.parentElement.remove()">Remove</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        window.addDaypart = () => {
+            const container = document.getElementById('dayparts-container');
+            const div = document.createElement('div');
+            div.className = 'card p-2 mb-2 bg-dark border-secondary';
+            div.innerHTML = `
+                <div class="row g-2">
+                    <div class="col-12 col-md-3">
+                        <input type="text" class="form-control dp-name" placeholder="Daypart Name">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <input type="time" class="form-control dp-start">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <input type="time" class="form-control dp-end">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <input type="color" class="form-control form-control-color w-100 dp-color" value="#333333">
+                    </div>
+                    <div class="col-6 col-md-1">
+                        <input type="text" class="form-control dp-icon" placeholder="Icon">
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <button class="btn btn-sm btn-danger w-100" onclick="this.parentElement.parentElement.parentElement.remove()">Remove</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        };
+
+        function renderAlerts(alerts) {
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = '';
+            alerts.forEach((alert, index) => {
+                const div = document.createElement('div');
+                div.className = 'card p-2 mb-2 bg-dark border-secondary';
+                div.innerHTML = `
+                    <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                            <input type="text" class="form-control alert-text" placeholder="Alert Text" value="${alert.text}">
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <select class="form-select bg-dark text-white border-secondary alert-type">
+                                <option value="normal" ${alert.type === 'normal' ? 'selected' : ''}>Normal (Green)</option>
+                                <option value="info" ${alert.type === 'info' ? 'selected' : ''}>Info (Blue)</option>
+                                <option value="warning" ${alert.type === 'warning' ? 'selected' : ''}>Warning (Red)</option>
+                                <option value="custom" ${alert.type === 'custom' ? 'selected' : ''}>Custom</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2 custom-colors ${alert.type !== 'custom' ? 'd-none' : ''}">
+                            <div class="d-flex gap-1">
+                                <input type="color" class="form-control form-control-color w-50 alert-bg-color" value="${alert.bgColor || '#028a0f'}" title="Background Color">
+                                <input type="color" class="form-control form-control-color w-50 alert-text-color" value="${alert.textColor || '#ffffff'}" title="Text Color">
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <input type="date" class="form-control alert-start" value="${alert.startDate || ''}">
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <input type="date" class="form-control alert-end" value="${alert.endDate || ''}">
+                        </div>
+                        <div class="col-12 mt-1">
+                            <button class="btn btn-sm btn-danger w-100" onclick="this.parentElement.parentElement.parentElement.remove()">Remove</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+                
+                // Add event listener for color visibility
+                const select = div.querySelector('.alert-type');
+                const colorDiv = div.querySelector('.custom-colors');
+                select.addEventListener('change', (e) => {
+                    if (e.target.value === 'custom') {
+                        colorDiv.classList.remove('d-none');
+                    } else {
+                        colorDiv.classList.add('d-none');
+                    }
+                });
+            });
+        }
+
+        window.addAlert = () => {
+            renderAlerts([...getAlertsFromUI(), {text: '', type: 'normal'}]);
+        };
+
+        function getAlertsFromUI() {
+            const items = [];
+            document.querySelectorAll('#alerts-container > div').forEach(el => {
+                const type = el.querySelector('.alert-type').value;
+                const bgColor = type === 'custom' ? el.querySelector('.alert-bg-color').value : null;
+                const textColor = type === 'custom' ? el.querySelector('.alert-text-color').value : null;
+
+                items.push({
+                    text: el.querySelector('.alert-text').value,
+                    type: type,
+                    startDate: el.querySelector('.alert-start').value,
+                    endDate: el.querySelector('.alert-end').value,
+                    bgColor: bgColor,
+                    textColor: textColor
+                });
+            });
+            return items.filter(i => i.text);
+        }
+
+        // Announcements
+        function renderAnnouncements(items) {
+            const container = document.getElementById('announcements-container');
+            container.innerHTML = '';
+            items.forEach((item, index) => {
+                const text = typeof item === 'string' ? item : item.text;
+                const start = typeof item === 'object' ? item.startDate : '';
+                const end = typeof item === 'object' ? item.endDate : '';
+
+                const div = document.createElement('div');
+                div.className = 'card p-2 mb-2 bg-dark border-secondary';
+                div.innerHTML = `
+                    <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                            <input type="text" class="form-control ann-text" placeholder="Announcement Text" value="${text}">
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <input type="date" class="form-control ann-start" value="${start}" title="Start Date (Optional)">
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <input type="date" class="form-control ann-end" value="${end}" title="End Date (Optional)">
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <button class="btn btn-sm btn-danger w-100" onclick="this.parentElement.parentElement.parentElement.remove()">Remove</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        window.addAnnouncement = () => {
+            const container = document.getElementById('announcements-container');
+            const div = document.createElement('div');
+            div.className = 'card p-2 mb-2 bg-dark border-secondary';
+            div.innerHTML = `
+                <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                        <input type="text" class="form-control ann-text" placeholder="Announcement Text">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <input type="date" class="form-control ann-start" title="Start Date (Optional)">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <input type="date" class="form-control ann-end" title="End Date (Optional)">
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <button class="btn btn-sm btn-danger w-100" onclick="this.parentElement.parentElement.parentElement.remove()">Remove</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        };
+
+        // LTOs
+        const LTO_EMOJIS = [
+            { char: "🍔", label: "Burger" }, { char: "🍟", label: "Fries" }, { char: "🥤", label: "Drink" },
+            { char: "🍦", label: "Ice Cream" }, { char: "☕", label: "Coffee" }, { char: "🍩", label: "Donut" },
+            { char: "🍪", label: "Cookie" }, { char: "🍰", label: "Cake" }, { char: "🧁", label: "Cupcake" },
+            { char: "🥪", label: "Sandwich" }, { char: "🌮", label: "Taco" }, { char: "🌯", label: "Burrito" },
+            { char: "🥗", label: "Salad" }, { char: "🍕", label: "Pizza" }, { char: "🌭", label: "Hot Dog" },
+            { char: "🍳", label: "Egg" }, { char: "🥞", label: "Pancakes" }, { char: "🥓", label: "Bacon" },
+            { char: "🍗", label: "Chicken" }, { char: "🥩", label: "Steak" }, { char: "🍤", label: "Shrimp" },
+            { char: "🥟", label: "Dumpling" }, { char: "🍣", label: "Sushi" }, { char: "🍜", label: "Noodles" },
+            { char: "🍝", label: "Pasta" }, { char: "🍞", label: "Bread" }, { char: "🥐", label: "Croissant" },
+            { char: "🧀", label: "Cheese" }, { char: "🍎", label: "Apple" }, { char: "🍌", label: "Banana" },
+            { char: "🍓", label: "Strawberry" }, { char: "🥑", label: "Avocado" }, { char: "🥦", label: "Broccoli" },
+            { char: "🥕", label: "Carrot" }, { char: "🌽", label: "Corn" }, { char: "🍯", label: "Honey" },
+            { char: "🍫", label: "Chocolate" }, { char: "🍬", label: "Candy" }, { char: "🍭", label: "Lollipop" },
+            { char: "🆕", label: "New" }, { char: "🔥", label: "Hot" }, { char: "✨", label: "Special" }
+        ];
+
+        function buildEmojiPickerOptions(selectedIcon) {
+            const isPreset = !selectedIcon || LTO_EMOJIS.some(e => e.char === selectedIcon);
+            let opts = '<option value="">-- Quick Pick --</option>';
+            LTO_EMOJIS.forEach(e => {
+                opts += `<option value="${e.char}">${e.char} ${e.label}</option>`;
+            });
+            return opts;
+        }
+
+        function renderLTOs(items) {
+            const container = document.getElementById('ltos-container');
+            container.innerHTML = '';
+            items.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'card p-2 mb-2 bg-dark border-secondary';
+
+                div.innerHTML = `
+                    <div class="row g-2 align-items-center">
+                        <div class="col-12 col-md-5">
+                            <input type="text" class="form-control lto-text" placeholder="LTO Name" value="${item.text}">
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <div class="input-group">
+                                <input type="text" class="form-control lto-emoji text-center" placeholder="🍔" value="${item.icon || ''}" style="max-width: 60px; font-size: 1.3rem;">
+                                <select class="form-select lto-emoji-picker bg-dark text-white border-secondary">${buildEmojiPickerOptions(item.icon)}</select>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-2 text-end">
+                            <button class="btn btn-sm btn-danger w-100" onclick="this.parentElement.parentElement.parentElement.remove()">Remove</button>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <div class="form-check form-switch d-inline-block me-3">
+                                <input class="form-check-input lto-countdown-check" type="checkbox" role="switch" id="countdown-check-${index}" ${item.countdownDate ? 'checked' : ''} onchange="this.parentElement.nextElementSibling.disabled = !this.checked">
+                                <label class="form-check-label" for="countdown-check-${index}">Countdown?</label>
+                            </div>
+                            <input type="datetime-local" class="form-control lto-countdown-date d-inline-block w-auto bg-dark text-white border-secondary" value="${item.countdownDate || ''}" ${item.countdownDate ? '' : 'disabled'}>
+                        </div>
+                    </div>
+                `;
+                const picker = div.querySelector('.lto-emoji-picker');
+                const input = div.querySelector('.lto-emoji');
+                picker.addEventListener('change', () => { input.value = picker.value; picker.value = ''; });
+                container.appendChild(div);
+            });
+        }
+        window.addLTO = () => {
+            const container = document.getElementById('ltos-container');
+            const idx = container.children.length;
+            const div = document.createElement('div');
+            div.className = 'card p-2 mb-2 bg-dark border-secondary';
+
+            div.innerHTML = `
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-md-5">
+                        <input type="text" class="form-control lto-text" placeholder="LTO Name">
+                    </div>
+                    <div class="col-12 col-md-5">
+                        <div class="input-group">
+                            <input type="text" class="form-control lto-emoji text-center" placeholder="🍔" style="max-width: 60px; font-size: 1.3rem;">
+                            <select class="form-select lto-emoji-picker bg-dark text-white border-secondary">${buildEmojiPickerOptions('')}</select>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-2 text-end">
+                        <button class="btn btn-sm btn-danger w-100" onclick="this.parentElement.parentElement.parentElement.remove()">Remove</button>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <div class="form-check form-switch d-inline-block me-3">
+                            <input class="form-check-input lto-countdown-check" type="checkbox" role="switch" id="countdown-check-${idx}" onchange="this.parentElement.nextElementSibling.disabled = !this.checked">
+                            <label class="form-check-label" for="countdown-check-${idx}">Countdown?</label>
+                        </div>
+                        <input type="datetime-local" class="form-control lto-countdown-date d-inline-block w-auto bg-dark text-white border-secondary" disabled>
+                    </div>
+                </div>
+            `;
+            const picker = div.querySelector('.lto-emoji-picker');
+            const input = div.querySelector('.lto-emoji');
+            picker.addEventListener('change', () => { input.value = picker.value; picker.value = ''; });
+            container.appendChild(div);
+        };
+
+        // Disengagements
+        function renderDisengagements(items) {
+            const container = document.getElementById('disengagements-container');
+            container.innerHTML = '';
+            items.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'card p-2 mb-2 bg-dark border-secondary';
+
+                div.innerHTML = `
+                    <div class="row g-2 align-items-center">
+                        <div class="col-12 col-md-5">
+                            <input type="text" class="form-control dis-text" placeholder="Item Name" value="${item.text}">
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <div class="input-group">
+                                <input type="text" class="form-control dis-emoji text-center" placeholder="🚫" value="${item.icon || ''}" style="max-width: 60px; font-size: 1.3rem;">
+                                <select class="form-select dis-emoji-picker bg-dark text-white border-secondary">${buildEmojiPickerOptions(item.icon)}</select>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-2 text-end">
+                            <button class="btn btn-sm btn-danger w-100" onclick="this.parentElement.parentElement.parentElement.remove()">Remove</button>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <div class="form-check form-switch d-inline-block me-3">
+                                <input class="form-check-input dis-countdown-check" type="checkbox" role="switch" id="dis-countdown-check-${index}" ${item.countdownDate ? 'checked' : ''} onchange="this.parentElement.nextElementSibling.disabled = !this.checked">
+                                <label class="form-check-label" for="dis-countdown-check-${index}">Countdown?</label>
+                            </div>
+                            <input type="datetime-local" class="form-control dis-countdown-date d-inline-block w-auto bg-dark text-white border-secondary" value="${item.countdownDate || ''}" ${item.countdownDate ? '' : 'disabled'}>
+                        </div>
+                    </div>
+                `;
+                const picker = div.querySelector('.dis-emoji-picker');
+                const input = div.querySelector('.dis-emoji');
+                picker.addEventListener('change', () => { input.value = picker.value; picker.value = ''; });
+                container.appendChild(div);
+            });
+        }
+        window.addDisengagement = () => {
+            const container = document.getElementById('disengagements-container');
+            const idx = container.children.length;
+            const div = document.createElement('div');
+            div.className = 'card p-2 mb-2 bg-dark border-secondary';
+
+            div.innerHTML = `
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-md-5">
+                        <input type="text" class="form-control dis-text" placeholder="Item Name">
+                    </div>
+                    <div class="col-12 col-md-5">
+                        <div class="input-group">
+                            <input type="text" class="form-control dis-emoji text-center" placeholder="🚫" style="max-width: 60px; font-size: 1.3rem;">
+                            <select class="form-select dis-emoji-picker bg-dark text-white border-secondary">${buildEmojiPickerOptions('')}</select>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-2 text-end">
+                        <button class="btn btn-sm btn-danger w-100" onclick="this.parentElement.parentElement.parentElement.remove()">Remove</button>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <div class="form-check form-switch d-inline-block me-3">
+                            <input class="form-check-input dis-countdown-check" type="checkbox" role="switch" id="dis-countdown-check-${idx}" onchange="this.parentElement.nextElementSibling.disabled = !this.checked">
+                            <label class="form-check-label" for="dis-countdown-check-${idx}">Countdown?</label>
+                        </div>
+                        <input type="datetime-local" class="form-control dis-countdown-date d-inline-block w-auto bg-dark text-white border-secondary" disabled>
+                    </div>
+                </div>
+            `;
+            const picker = div.querySelector('.dis-emoji-picker');
+            const input = div.querySelector('.dis-emoji');
+            picker.addEventListener('change', () => { input.value = picker.value; picker.value = ''; });
+            container.appendChild(div);
+        };
+
+        // Events
+        function renderEvents(items) {
+            const container = document.getElementById('events-container');
+            container.innerHTML = '';
+            items.forEach(item => {
+                const text = typeof item === 'string' ? item : item.text;
+                const start = typeof item === 'object' ? item.startDate : '';
+                const end = typeof item === 'object' ? item.endDate : '';
+
+                const div = document.createElement('div');
+                div.className = 'card p-2 mb-2 bg-dark border-secondary';
+                div.innerHTML = `
+                    <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                            <input type="text" class="form-control event-text" placeholder="Event Name" value="${text}">
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <input type="date" class="form-control event-start" value="${start}" title="Start Date (Optional)">
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <input type="date" class="form-control event-end" value="${end}" title="End Date (Optional)">
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <button class="btn btn-sm btn-danger w-100" onclick="this.parentElement.parentElement.parentElement.remove()">Remove</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        window.addEvent = () => {
+            const container = document.getElementById('events-container');
+            const div = document.createElement('div');
+            div.className = 'card p-2 mb-2 bg-dark border-secondary';
+            div.innerHTML = `
+                <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                        <input type="text" class="form-control event-text" placeholder="Event Name">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <input type="date" class="form-control event-start" title="Start Date (Optional)">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <input type="date" class="form-control event-end" title="End Date (Optional)">
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <button class="btn btn-sm btn-danger w-100" onclick="this.parentElement.parentElement.parentElement.remove()">Remove</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        };
+
+        // Save
+        document.getElementById('save-btn').addEventListener('click', async () => {
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.disabled = true;
+            saveBtn.innerText = "Saving...";
+
+            try {
+                // Handle LTOs (Emoji Mode)
+                const ltoContainers = document.querySelectorAll('#ltos-container > div');
+                const ltos = Array.from(ltoContainers).map(div => {
+                    const countdownCheck = div.querySelector('.lto-countdown-check').checked;
+                    const countdownDate = div.querySelector('.lto-countdown-date').value;
+                    return {
+                        text: div.querySelector('.lto-text').value,
+                        icon: div.querySelector('.lto-emoji').value,
+                        countdownDate: countdownCheck ? countdownDate : null
+                    };
+                }).filter(i => i.text);
+
+                const disContainers = document.querySelectorAll('#disengagements-container > div');
+                const disengagements = Array.from(disContainers).map(div => {
+                    const countdownCheck = div.querySelector('.dis-countdown-check').checked;
+                    const countdownDate = div.querySelector('.dis-countdown-date').value;
+                    return {
+                        text: div.querySelector('.dis-text').value,
+                        icon: div.querySelector('.dis-emoji').value,
+                        countdownDate: countdownCheck ? countdownDate : null
+                    };
+                }).filter(i => i.text);
+
+                const data = {
+                    alerts: getAlertsFromUI(),
+                    announcements: Array.from(document.querySelectorAll('#announcements-container > div')).map(div => ({
+                        text: div.querySelector('.ann-text').value,
+                        startDate: div.querySelector('.ann-start').value,
+                        endDate: div.querySelector('.ann-end').value
+                    })).filter(i => i.text),
+                    ltos: ltos,
+                    disengagements: disengagements,
+                    events: Array.from(document.querySelectorAll('#events-container > div')).map(div => ({
+                        text: div.querySelector('.event-text').value,
+                        startDate: div.querySelector('.event-start').value,
+                        endDate: div.querySelector('.event-end').value
+                    })).filter(i => i.text),
+                    daypartSchedule: Array.from(document.querySelectorAll('#dayparts-container > div')).map(el => ({
+                        name: el.querySelector('.dp-name').value,
+                        startTime: el.querySelector('.dp-start').value,
+                        endTime: el.querySelector('.dp-end').value,
+                        color: el.querySelector('.dp-color').value || '#333333',
+                        icon: el.querySelector('.dp-icon').value || '',
+                        textColor: '#ffffff'
+                    })).filter(dp => dp.name && dp.startTime && dp.endTime)
+                };
+
+                const isSpecialLevel = selectedSiteId === 'general' || selectedSiteId.startsWith('market:') || selectedSiteId.startsWith('district:');
+
+                if (!isSpecialLevel) {
+                    // removed inputs
+                }
+
+                if (selectedSiteId === 'general') {
+                    await setDoc(doc(db, "company", "general"), data, { merge: true });
+                } else if (selectedSiteId.startsWith('market:')) {
+                    const marketName = selectedSiteId.replace('market:', '');
+                    await setDoc(doc(db, "markets", marketName), data, { merge: true });
+                } else if (selectedSiteId.startsWith('district:')) {
+                    const districtName = selectedSiteId.replace('district:', '');
+                    await setDoc(doc(db, "districts", districtName), data, { merge: true });
+                } else {
+                    await setDoc(doc(db, "stores", selectedSiteId), data, { merge: true });
+                }
+                alert('Saved successfully!');
+            } catch (error) {
+                alert('Error saving: ' + error.message);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = "Save Changes";
+            }
+        });
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

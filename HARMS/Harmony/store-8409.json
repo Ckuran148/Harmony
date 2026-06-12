@@ -1,0 +1,74 @@
+{
+    "storeName": "Wendy's 8409 - Barker",
+    "joltLocationId": "TG9jYXRpb246MDAwNTg3NWIyNjBkNGM2ZDNhMTkxOTQ3YWI5MGUyMTI=",
+    "alerts": [
+        {     
+        "text": "Store 8409 - Dashboard",
+        "type": "info"
+    }
+
+], 
+    "daypartSchedule": [
+        {
+            "name": "DAYPART 1 (Breakfast)",
+            "startTime": "06:30",
+            "endTime": "10:30",
+            "color": "#e6a800",
+            "textColor": "#000",
+            "icon": "☕"
+        },
+        {
+            "name": "DAYPART 2 (Lunch Rush)",
+            "startTime": "10:30",
+            "endTime": "14:00",
+            "color": "#b00000",
+            "textColor": "#fff",
+            "icon": "🍔"
+        },
+        {
+            "name": "DAYPART 3 (Afternoon)",
+            "startTime": "14:00",
+            "endTime": "17:00",
+            "color": "#005cc8",
+            "textColor": "#fff",
+            "icon": "🍟"
+        },
+        {
+            "name": "DAYPART 4 (Dinner)",
+            "startTime": "17:00",
+            "endTime": "20:00",
+            "color": "#b00000",
+            "textColor": "#fff",
+            "icon": "🍽️"
+        },
+        {
+            "name": "DAYPART 5 (After Dinner Snack)",
+            "startTime": "20:00",
+            "endTime": "22:00",
+            "color": "#542a78",
+            "textColor": "#fff",
+            "icon": "🍦"
+        },
+        {
+            "name": "DAYPART 6 (Late Night)",
+            "startTime": "22:00",
+            "endTime": "24:00",
+            "color": "#333",
+            "textColor": "#fff",
+            "icon": "🌙"
+        }
+    ],
+    "announcements": [
+        "No one takes a break until food safety is complete - throughout the whole day."
+        
+    ],
+    "ltos": [], 
+    "events": [
+        
+    ]
+}
+
+
+
+
+

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wendy's Crew Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* VIDEO PANEL — hidden by default, spans the first 3 grid columns */
+        #video-panel {
+            display: none;
+            grid-column: 1 / span 3;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            align-self: stretch;
+        }
+        #video-panel video,
+        #video-panel iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+        #video-panel video { object-fit: contain; }
+    </style>
+</head>
+<body>
+
+    <div id="site-indicator">Store: Loading...</div>
+
+    <div id="closed-overlay" style="display: none;">
+        <div>
+            <h1>STORE CLOSED</h1>
+            <p id="closed-reason">See you tomorrow!</p>
+        </div>
+    </div>
+
+    <div id="alert-section">Loading System...</div>
+
+    <div id="daypart-section">Calculating Daypart...</div>
+
+    <div class="content-row">
+        <div class="card">
+            <h2>📢 Announcements</h2>
+            <div class="list-container"><ul id="announcements-list"><li>Loading...</li></ul></div>
+        </div>
+        <div class="card" style="border-top-color: #e00000;"> 
+            <h2>🍔 Upcoming LTOs</h2>
+            <div class="list-container"><ul id="lto-list"><li>Loading...</li></ul></div>
+        </div>
+        <div class="card" style="border-top-color: #e6a800;"> 
+            <h2>📅 This Week</h2>
+            <div class="list-container"><ul id="events-list"><li>Loading...</li></ul></div>
+        </div>
+        <div id="video-panel">
+            <video id="media-video" muted playsinline></video>
+            <iframe id="media-iframe" frameborder="0" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
+        </div>
+        <div class="card jolt-split-card">
+            <div class="jolt-section jolt-top">
+                <div class="jolt-header-small" style="color: #ff9999;">📋 Current & Late</div>
+                <div class="list-container" id="jolt-scroll-current"><ul id="jolt-list-current"><li>Syncing...</li></ul></div>
+            </div>
+            <div class="jolt-section jolt-bottom">
+                <div class="jolt-header-small" style="color: #88ccff;">🕒 Upcoming (3 Hrs)</div>
+                <div class="list-container" id="jolt-scroll-upcoming"><ul id="jolt-list-upcoming"><li>Loading...</li></ul></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sensor-row-container">
+        <div id="sensor-grid">
+            </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="importmap">
+    {
+        "imports": {
+            "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+            "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
+        }
+    }
+    </script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>

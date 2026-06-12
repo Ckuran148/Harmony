@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wendy's Crew Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ===== HALF-SCREEN OPTIMIZATIONS ===== */
+
+        body {
+            gap: 8px;
+            padding: 10px;
+            /* Give sensors more room (20%), tighten alert/daypart rows */
+            grid-template-rows: 10% 7% 1fr 20%;
+        }
+
+        #site-indicator {
+            font-size: 1rem;
+            padding: 3px 10px;
+            top: 10px;
+            right: 10px;
+        }
+
+        #alert-section   { font-size: 2rem; }
+        #daypart-section { font-size: 1.4rem; }
+
+        /* Cards */
+        .content-row { gap: 10px; }
+
+        .card { padding: 10px 12px; }
+
+        h2 {
+            font-size: 1.3rem;
+            padding-bottom: 8px;
+            margin-bottom: 4px;
+        }
+
+        li {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .lto-item { font-size: 1.4rem; margin-bottom: 8px; padding-bottom: 6px; }
+        .lto-icon { font-size: 1.8rem; }
+        .lto-img { width: 35px; height: 35px; }
+        .lto-countdown { font-size: 0.7rem; margin-top: 3px; }
+
+        .jolt-section      { padding: 8px 12px; }
+        .jolt-header-small { font-size: 1rem; margin-bottom: 5px; padding-bottom: 4px; }
+
+        /* Sensor row */
+        #sensor-row-container { padding: 4px; }
+        /* height: 100% ensures sensor-grid fills the row so cards can stretch into it */
+        #sensor-grid          { gap: 4px; height: 100%; align-items: stretch; }
+        .sensor-card          { padding: 4px 6px; }
+
+        /* Auto margins absorb all free space above and below, centering the reading
+           between the sensor name and signal row without disturbing space-between */
+        .reading {
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+
+        /* VIDEO PANEL — hidden by default, spans the first 3 grid columns */
+        #video-panel {
+            display: none;
+            grid-column: 1 / span 3;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            align-self: stretch;
+        }
+        #video-panel video,
+        #video-panel iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+        #video-panel video { object-fit: contain; }
+
+        /* Override the always-on media query so fonts stay readable on narrow cards */
+        @media (min-width: 100px) {
+            .sensor-card h3 {
+                /* Full wrapping — show the entire sensor name */
+                white-space: normal;
+                word-break: break-word;
+                overflow: hidden;
+                display: block;
+                line-height: 1.15;
+                font-size: clamp(1.1rem, 11cqw, 1.8rem);
+            }
+            .reading    { font-size: clamp(1.8rem, 18cqw, 3.2rem); }
+            .signal-row { font-size: clamp(0.9rem, 9cqw, 1.3rem); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="site-indicator">Store: Loading...</div>
+
+    <div id="closed-overlay" style="display: none;">
+        <div>
+            <h1>STORE CLOSED</h1>
+            <p id="closed-reason">See you tomorrow!</p>
+        </div>
+    </div>
+
+    <div id="alert-section">Loading System...</div>
+
+    <div id="daypart-section">Calculating Daypart...</div>
+
+    <div class="content-row">
+        <div class="card">
+            <h2>📢 Announcements</h2>
+            <div class="list-container"><ul id="announcements-list"><li>Loading...</li></ul></div>
+        </div>
+        <div class="card" style="border-top-color: #e00000;"> 
+            <h2>🍔 Upcoming LTOs</h2>
+            <div class="list-container"><ul id="lto-list"><li>Loading...</li></ul></div>
+        </div>
+        <div class="card" style="border-top-color: #e6a800;"> 
+            <h2>📅 This Week</h2>
+            <div class="list-container"><ul id="events-list"><li>Loading...</li></ul></div>
+        </div>
+        <div id="video-panel">
+            <video id="media-video" muted playsinline></video>
+            <iframe id="media-iframe" frameborder="0" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
+        </div>
+        <div class="card jolt-split-card"> 
+            <div class="jolt-section jolt-top">
+                <div class="jolt-header-small" style="color: #ff9999;">📋 Current & Late</div>
+                <div class="list-container" id="jolt-scroll-current"><ul id="jolt-list-current"><li>Syncing...</li></ul></div>
+            </div>
+            <div class="jolt-section jolt-bottom">
+                <div class="jolt-header-small" style="color: #88ccff;">🕒 Upcoming (3 Hrs)</div>
+                <div class="list-container" id="jolt-scroll-upcoming"><ul id="jolt-list-upcoming"><li>Loading...</li></ul></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sensor-row-container">
+        <div id="sensor-grid">
+            </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="importmap">
+    {
+        "imports": {
+            "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+            "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
+        }
+    }
+    </script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
