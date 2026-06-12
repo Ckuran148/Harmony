@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, onSnapshot } from "firebase/firestore";
 
 // CONFIGURATION
 const REFRESH_RATE = 300000; // 5 minutes
@@ -160,6 +160,11 @@ async function fetchData() {
       ],
       joltLocationId: storeData.joltLocationId,
     };
+
+    if (!mediaRotationInitialized) {
+      initMediaRotation(marketName, districtName);
+      mediaRotationInitialized = true;
+    }
 
     if (mergedData.joltLocationId) cachedJoltId = mergedData.joltLocationId;
     else {
@@ -658,6 +663,266 @@ function startLTOCountdown(element, targetDate, type) {
   update(); // Initial call
 
   setInterval(update, 1000);
+}
+
+// =============================================
+// MEDIA ROTATION PLAYER
+// =============================================
+
+let mediaRotationInitialized = false;
+let mediaUnsubs = [];
+let mediaCurrentQueue = [];
+let mediaSettings = { enabled: false, waitMinutes: 5, restMinutes: 5 };
+let mediaWaitTimer = null;
+let mediaPlaying = false;
+let mediaAbort = false;
+
+const INFO_CARD_SEL = '.content-row .card:not(.jolt-split-card)';
+
+function detectMediaType(url) {
+  if (!url) return 'unknown';
+  if (/youtube\.com\/watch|youtube\.com\/embed|youtu\.be\//.test(url)) return 'youtube';
+  if (/\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(url)) return 'video';
+  if (/\.pdf(\?|#|$)/i.test(url)) return 'pdf';
+  return 'iframe';
+}
+
+function buildYouTubeEmbed(url) {
+  const match = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  const id = match ? match[1] : null;
+  if (!id) return url;
+  const origin = encodeURIComponent(window.location.origin);
+  return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&rel=0&playsinline=1&enablejsapi=1&origin=${origin}`;
+}
+
+function isItemActive(item) {
+  const now = new Date();
+  if (item.startDate && new Date(item.startDate) > now) return false;
+  if (item.endDate   && new Date(item.endDate)   < now) return false;
+  return true;
+}
+
+function buildQueue(genD, mktD, disD, stoD) {
+  const r = (genD || {}).mediaRotation || {};
+  if (!r.enabled) return null;
+  if (r.activeUntil && new Date() > new Date(r.activeUntil)) return null;
+  return [
+    ...((r.items) || []),
+    ...(((mktD || {}).mediaRotation || {}).items || []),
+    ...(((disD || {}).mediaRotation || {}).items || []),
+    ...(((stoD || {}).mediaRotation || {}).items || []),
+  ].filter(isItemActive);
+}
+
+function showInfoCards() {
+  document.querySelectorAll(INFO_CARD_SEL).forEach(c => c.style.display = '');
+  const panel   = document.getElementById('video-panel');
+  const videoEl = document.getElementById('media-video');
+  const iframeEl = document.getElementById('media-iframe');
+  if (panel)    panel.style.display = 'none';
+  if (videoEl)  { videoEl.pause(); videoEl.src = ''; videoEl.style.display = 'none'; videoEl.onended = null; }
+  if (iframeEl) { iframeEl.src = ''; iframeEl.style.display = 'none'; }
+}
+
+function hideInfoCards() {
+  document.querySelectorAll(INFO_CARD_SEL).forEach(c => c.style.display = 'none');
+  const panel = document.getElementById('video-panel');
+  if (panel) panel.style.display = 'block';
+}
+
+function playVideo(item, videoEl) {
+  return new Promise(resolve => {
+    videoEl.style.display = 'block';
+    videoEl.src = item.url;
+    videoEl.play().catch(() => {});
+    videoEl.onended = () => { videoEl.onended = null; resolve(); };
+  });
+}
+
+function playYouTube(item, iframeEl) {
+  return new Promise(resolve => {
+    iframeEl.style.display = 'block';
+    iframeEl.src = buildYouTubeEmbed(item.url);
+    let done = false;
+    const finish = (reason) => {
+      if (done) return;
+      done = true;
+      window.removeEventListener('message', handler);
+      clearTimeout(fallback);
+      console.log('[Media] YouTube finished:', reason);
+      resolve();
+    };
+    const handler = (e) => {
+      try {
+        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        console.log('[Media] YouTube postMessage:', data);
+        if (data.event === 'onStateChange' && data.info === 0) finish('ended');
+      } catch (_) {}
+    };
+    const timeoutMs = item.durationSeconds ? item.durationSeconds * 1000 : 10 * 60 * 1000;
+    const fallback = setTimeout(() => finish('timeout'), timeoutMs);
+    window.addEventListener('message', handler);
+  });
+}
+
+function buildIframeUrl(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('brightcove.net')) {
+      u.searchParams.set('autoplay', 'true');
+      u.searchParams.set('muted', 'true');
+      return u.toString();
+    }
+  } catch (_) {}
+  return url;
+}
+
+function playIframe(item, iframeEl) {
+  return new Promise(resolve => {
+    iframeEl.style.display = 'block';
+    iframeEl.src = buildIframeUrl(item.url);
+    let done = false;
+    const finish = (reason) => {
+      if (done) return;
+      done = true;
+      window.removeEventListener('message', handler);
+      clearTimeout(fallback);
+      console.log('[Media] iframe finished:', reason);
+      resolve();
+    };
+    const handler = (e) => {
+      try {
+        const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        console.log('[Media] iframe postMessage:', d);
+        if (d.event === 'ended' || d.type === 'ended' || d === 'ended') finish('postMessage ended');
+      } catch (_) {
+        console.log('[Media] iframe raw message:', e.data);
+      }
+    };
+    // Use durationSeconds if set; otherwise 10-minute safety fallback
+    const timeoutMs = item.durationSeconds ? item.durationSeconds * 1000 : 10 * 60 * 1000;
+    const fallback = setTimeout(() => finish('timeout'), timeoutMs);
+    window.addEventListener('message', handler);
+  });
+}
+
+function buildPDFEmbedUrl(url) {
+  // Google Drive: convert any /view, /edit, or share URL to /preview (designed for iframe embedding)
+  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (driveMatch) {
+    return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+  }
+  // Convert GitHub blob URL to raw URL
+  const blobMatch = url.match(/https?:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/(.+)/);
+  if (blobMatch) {
+    url = `https://raw.githubusercontent.com/${blobMatch[1]}/${blobMatch[2]}/${blobMatch[3]}`;
+  }
+  // Route through Google Docs Viewer to bypass X-Frame-Options restrictions
+  return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+}
+
+function playPDF(item, iframeEl) {
+  return new Promise(resolve => {
+    iframeEl.style.display = 'block';
+    iframeEl.src = buildPDFEmbedUrl(item.url);
+    setTimeout(() => { iframeEl.src = ''; resolve(); }, (item.durationSeconds || 60) * 1000);
+  });
+}
+
+async function runRotation(queue, settings) {
+  mediaPlaying = true;
+  mediaAbort   = false;
+  const videoEl  = document.getElementById('media-video');
+  const iframeEl = document.getElementById('media-iframe');
+
+  hideInfoCards();
+
+  for (const item of queue) {
+    if (mediaAbort) break;
+    if (!isItemActive(item)) continue;
+    if (videoEl)  { videoEl.style.display = 'none'; videoEl.pause(); videoEl.src = ''; videoEl.onended = null; }
+    if (iframeEl) { iframeEl.style.display = 'none'; iframeEl.src = ''; }
+
+    const type = detectMediaType(item.url);
+    if      (type === 'video'   && videoEl)  await playVideo(item, videoEl);
+    else if (type === 'youtube' && iframeEl) await playYouTube(item, iframeEl);
+    else if (type === 'pdf'     && iframeEl) await playPDF(item, iframeEl);
+    else if (iframeEl)                       await playIframe(item, iframeEl);
+  }
+
+  showInfoCards();
+  mediaPlaying = false;
+
+  if (!mediaAbort) {
+    mediaWaitTimer = setTimeout(
+      () => scheduleNext(settings),
+      (settings.restMinutes || 5) * 60 * 1000
+    );
+  }
+}
+
+function scheduleNext(settings) {
+  const q = mediaCurrentQueue.filter(isItemActive);
+  if (q.length > 0) {
+    runRotation(q, settings);
+  } else {
+    mediaWaitTimer = setTimeout(
+      () => scheduleNext(settings),
+      (settings.restMinutes || 5) * 60 * 1000
+    );
+  }
+}
+
+function stopRotation() {
+  mediaAbort = true;
+  if (mediaWaitTimer) { clearTimeout(mediaWaitTimer); mediaWaitTimer = null; }
+  showInfoCards();
+  mediaPlaying = false;
+}
+
+function onMediaDataUpdate(genD, mktD, disD, stoD) {
+  const r          = (genD || {}).mediaRotation || {};
+  const newQueue   = buildQueue(genD, mktD, disD, stoD);
+  const newSettings = {
+    enabled:     r.enabled || false,
+    waitMinutes: r.waitMinutes || 5,
+    restMinutes: r.restMinutes || 5,
+  };
+  const wasEnabled = mediaSettings.enabled;
+
+  mediaCurrentQueue = newQueue || [];
+  mediaSettings     = newSettings;
+
+  if (!newSettings.enabled || !newQueue || newQueue.length === 0) {
+    if (mediaPlaying || mediaWaitTimer) stopRotation();
+    return;
+  }
+
+  if (!wasEnabled) {
+    // Freshly enabled — start the initial wait timer
+    if (mediaWaitTimer) clearTimeout(mediaWaitTimer);
+    mediaWaitTimer = setTimeout(
+      () => scheduleNext(newSettings),
+      newSettings.waitMinutes * 60 * 1000
+    );
+  }
+}
+
+function initMediaRotation(marketName, districtName) {
+  mediaUnsubs.forEach(u => u());
+  mediaUnsubs = [];
+
+  let genD = {}, mktD = {}, disD = {}, stoD = {};
+  let debounce = null;
+  const update = () => {
+    if (debounce) clearTimeout(debounce);
+    debounce = setTimeout(() => onMediaDataUpdate(genD, mktD, disD, stoD), 150);
+  };
+
+  mediaUnsubs.push(onSnapshot(doc(db, 'company', 'general'), s => { genD = s.exists() ? s.data() : {}; update(); }));
+  if (marketName)   mediaUnsubs.push(onSnapshot(doc(db, 'markets',   marketName),   s => { mktD = s.exists() ? s.data() : {}; update(); }));
+  if (districtName) mediaUnsubs.push(onSnapshot(doc(db, 'districts', districtName), s => { disD = s.exists() ? s.data() : {}; update(); }));
+  mediaUnsubs.push(onSnapshot(doc(db, 'stores', storeID), s => { stoD = s.exists() ? s.data() : {}; update(); }));
 }
 
 // --- START SEQUENCE ---

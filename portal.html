@@ -23,6 +23,9 @@
         }
         .btn-primary { background-color: #0097a7; border: none; }
         .btn-primary:hover { background-color: #007c8a; }
+        /* Bootstrap's default text-muted is too dark for this dark theme */
+        .text-muted { color: #aaa !important; }
+        .input-group-text { background-color: #333; border-color: #777; color: #fff; }
         #portal-content { display: none; }
         .nav-link { color: #aaa; }
         .navbar-nav .nav-link { 
@@ -48,6 +51,28 @@
         .site-card { cursor: pointer; transition: transform 0.2s; }
         .site-card:hover { transform: scale(1.02); }
         #login-container, #portal-content, #loading-screen { display: none; }
+
+        /* Hierarchy Tree Styles */
+        .hierarchy-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .hierarchy-header .badge { font-size: 0.9rem; }
+        .tree-node { position: relative; padding-left: 24px; }
+        .tree-node::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 1px; background-color: #444; }
+        .tree-node:last-child::before { bottom: 50%; }
+        .tree-node::after { content: ''; position: absolute; left: 8px; top: 14px; width: 14px; height: 1px; background-color: #444; }
+        .tree-root { padding-left: 0; }
+        .tree-root::before, .tree-root::after { display: none; }
+        .tree-toggle { cursor: pointer; user-select: none; padding: 4px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 8px; margin: 2px 0; transition: background-color 0.15s; }
+        .tree-toggle:hover { background-color: #333; }
+        .tree-toggle .arrow { display: inline-block; width: 16px; text-align: center; font-size: 0.7rem; color: #888; transition: transform 0.2s; }
+        .tree-toggle.collapsed .arrow { transform: rotate(-90deg); }
+        .tree-children { overflow: hidden; }
+        .tree-children.collapsed { display: none; }
+        .tree-label-market { color: #0097a7; font-weight: 600; }
+        .tree-label-district { color: #66bb6a; font-weight: 600; }
+        .tree-label-store { color: #bbb; font-weight: 400; }
+        .tree-label-unassigned { color: #ff9800; font-weight: 600; }
+        .tree-badge { display: inline-block; background-color: #333; color: #aaa; border: 1px solid #555; border-radius: 12px; padding: 0 8px; font-size: 0.75rem; margin-left: 8px; line-height: 1.6; }
+        .tree-store-icon { color: #666; margin-right: 4px; }
     </style>
 </head>
 <body>
@@ -162,6 +187,73 @@
                             </div>
                         </div>
 
+                        <div class="mb-4">
+                            <h4 class="mb-1">Media Rotation</h4>
+                            <small class="text-muted d-block mb-3">Replaces the Announcements, LTO, and This Week columns on dashboards at set intervals. Jolt and sensors always remain visible.</small>
+
+                            <!-- General-level only: master controls -->
+                            <div id="media-rotation-global-controls">
+                                <div class="card p-3 mb-3 border-secondary" style="background:#1a1a1a">
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-auto">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" role="switch" id="media-rotation-enabled">
+                                                <label class="form-check-label fw-bold" for="media-rotation-enabled">Enabled</label>
+                                            </div>
+                                            <small class="text-muted d-block mt-1">Master on/off for all dashboards</small>
+                                        </div>
+                                        <div class="col-auto">
+                                            <label class="form-label mb-1">Stop Showing After <span class="text-muted fw-normal">(date)</span></label>
+                                            <input type="date" class="form-control" id="media-rotation-until">
+                                            <small class="text-muted d-block mt-1">Leave blank to run indefinitely</small>
+                                        </div>
+                                        <div class="col-auto">
+                                            <label class="form-label mb-1">Delay Before First Play</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="media-rotation-wait" min="0" step="0.5" value="5" style="width:80px">
+                                                <span class="input-group-text border-secondary text-white" style="background:#333">min</span>
+                                            </div>
+                                            <small class="text-muted d-block mt-1">How long after page load before first play</small>
+                                        </div>
+                                        <div class="col-auto">
+                                            <label class="form-label mb-1">Dashboard Rest Period</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="media-rotation-rest" min="0" step="0.5" value="5" style="width:80px">
+                                                <span class="input-group-text border-secondary text-white" style="background:#333">min</span>
+                                            </div>
+                                            <small class="text-muted d-block mt-1">How long normal columns show before replaying</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Non-general note -->
+                            <div id="media-rotation-sub-note" class="d-none">
+                                <small class="text-info d-block mb-2">Items added here play <strong>after</strong> company-wide content. Timing and on/off are controlled at the General level.</small>
+                            </div>
+
+                            <p class="text-muted small mb-2">Media Queue — items play in order, then the dashboard rests before repeating.</p>
+                            <div id="media-rotation-container"></div>
+
+                            <!-- /media folder browser -->
+                            <div id="media-browse-panel" class="d-none mt-3">
+                                <div class="card p-3 border-secondary" style="background:#1a1a1a">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="fw-bold small">📁 Files in <code>/media</code> folder</span>
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" id="media-browse-refresh">↺ Refresh</button>
+                                    </div>
+                                    <small class="text-muted d-block mb-2">PDFs only — videos should use external links (YouTube, Brightcove, etc.). GitHub has a 25 MB file limit.</small>
+                                    <div id="media-browse-list"><small class="text-muted">Loading...</small></div>
+                                </div>
+                            </div>
+
+                            <div class="mt-2 d-flex gap-2 flex-wrap">
+                                <button class="btn btn-sm btn-outline-info" type="button" onclick="addMediaItem('video')">+ Add Video Link</button>
+                                <button class="btn btn-sm btn-outline-warning" type="button" onclick="addMediaItem('pdf')">+ Add PDF Link</button>
+                                <button class="btn btn-sm btn-outline-secondary" type="button" id="media-browse-btn">📁 Browse /media Folder</button>
+                            </div>
+                        </div>
+
                         <button id="save-btn" class="btn btn-primary btn-lg w-100">Save Changes</button>
                     </div>
                     <div id="no-site-selected" class="text-center mt-5">
@@ -182,6 +274,9 @@
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data-content" type="button" role="tab">Data Tools</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="hierarchy-tab" data-bs-toggle="tab" data-bs-target="#hierarchy-content" type="button" role="tab">Hierarchy</button>
                     </li>
                 </ul>
 
@@ -283,6 +378,19 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Hierarchy Tab -->
+                    <div class="tab-pane fade" id="hierarchy-content" role="tabpanel">
+                        <div class="hierarchy-header">
+                            <h4>Organizational Hierarchy</h4>
+                            <button class="btn btn-sm btn-outline-info" id="btn-refresh-hierarchy">Refresh</button>
+                        </div>
+                        <div id="hierarchy-loading" class="text-center d-none">
+                            <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+                            <span class="ms-2 text-muted">Loading hierarchy...</span>
+                        </div>
+                        <div id="hierarchy-tree"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -317,6 +425,24 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        // GitHub Pages auto-detection for /media file browser.
+        // Only needed if using a custom domain — leave blank to auto-detect.
+        const GITHUB_OWNER_OVERRIDE = '';
+        const GITHUB_REPO_OVERRIDE  = '';
+
+        function getGitHubConfig() {
+            if (GITHUB_OWNER_OVERRIDE && GITHUB_REPO_OVERRIDE) {
+                return { owner: GITHUB_OWNER_OVERRIDE, repo: GITHUB_REPO_OVERRIDE };
+            }
+            const hostname = window.location.hostname;
+            if (hostname.endsWith('.github.io')) {
+                const owner = hostname.replace('.github.io', '');
+                const repo  = window.location.pathname.split('/').filter(Boolean)[0] || '';
+                return { owner, repo };
+            }
+            return null;
+        }
 
         let currentUser = null;
         let userProfile = null;
@@ -638,6 +764,113 @@
             });
         }
 
+        // Hierarchy Tab
+        document.getElementById('hierarchy-tab').addEventListener('shown.bs.tab', () => loadHierarchy());
+        document.getElementById('btn-refresh-hierarchy').addEventListener('click', () => loadHierarchy());
+
+        async function loadHierarchy() {
+            const treeContainer = document.getElementById('hierarchy-tree');
+            const loading = document.getElementById('hierarchy-loading');
+            treeContainer.innerHTML = '';
+            loading.classList.remove('d-none');
+
+            try {
+                const sitesSnap = await getDocs(collection(db, "stores"));
+                const stores = [];
+                sitesSnap.forEach(docSnap => {
+                    stores.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                // Group by market -> district -> stores
+                const marketMap = {};  // market -> { districts: { district -> [stores] } }
+                const unassigned = [];
+
+                stores.forEach(s => {
+                    const market = s.market || '';
+                    const district = s.district || '';
+
+                    if (!market && !district) {
+                        unassigned.push(s);
+                        return;
+                    }
+
+                    const mKey = market || '(No Operator)';
+                    if (!marketMap[mKey]) marketMap[mKey] = {};
+                    const dKey = district || '(No District)';
+                    if (!marketMap[mKey][dKey]) marketMap[mKey][dKey] = [];
+                    marketMap[mKey][dKey].push(s);
+                });
+
+                const totalStores = stores.length;
+
+                // Build tree HTML
+                let html = '<div class="tree-root">';
+                html += `<div class="tree-toggle" data-target="root-children"><span class="arrow">&#9660;</span> <strong>Company (General)</strong> <span class="tree-badge">${totalStores} stores</span></div>`;
+                html += '<div class="tree-children" id="root-children">';
+
+                const sortedMarkets = Object.keys(marketMap).sort();
+                sortedMarkets.forEach(market => {
+                    const districts = marketMap[market];
+                    let marketStoreCount = 0;
+                    Object.values(districts).forEach(arr => marketStoreCount += arr.length);
+
+                    const marketId = 'market-' + market.replace(/[^a-zA-Z0-9]/g, '_');
+                    html += '<div class="tree-node">';
+                    html += `<div class="tree-toggle" data-target="${marketId}"><span class="arrow">&#9660;</span> <span class="tree-label-market">Operator: ${market}</span> <span class="tree-badge">${marketStoreCount} stores</span></div>`;
+                    html += `<div class="tree-children" id="${marketId}">`;
+
+                    const sortedDistricts = Object.keys(districts).sort();
+                    sortedDistricts.forEach(district => {
+                        const distStores = districts[district];
+                        const districtId = marketId + '-dist-' + district.replace(/[^a-zA-Z0-9]/g, '_');
+                        html += '<div class="tree-node">';
+                        html += `<div class="tree-toggle" data-target="${districtId}"><span class="arrow">&#9660;</span> <span class="tree-label-district">District: ${district}</span> <span class="tree-badge">${distStores.length} stores</span></div>`;
+                        html += `<div class="tree-children" id="${districtId}">`;
+
+                        distStores.sort((a, b) => a.id.localeCompare(b.id)).forEach(store => {
+                            const name = store.storeName ? ` - ${store.storeName}` : '';
+                            html += `<div class="tree-node"><div class="py-1"><span class="tree-store-icon">&#9632;</span><span class="tree-label-store">Store ${store.id}${name}</span></div></div>`;
+                        });
+
+                        html += '</div></div>'; // close district children + node
+                    });
+
+                    html += '</div></div>'; // close market children + node
+                });
+
+                if (unassigned.length > 0) {
+                    const unId = 'unassigned';
+                    html += '<div class="tree-node">';
+                    html += `<div class="tree-toggle" data-target="${unId}"><span class="arrow">&#9660;</span> <span class="tree-label-unassigned">Unassigned</span> <span class="tree-badge">${unassigned.length} stores</span></div>`;
+                    html += `<div class="tree-children" id="${unId}">`;
+                    unassigned.sort((a, b) => a.id.localeCompare(b.id)).forEach(store => {
+                        const name = store.storeName ? ` - ${store.storeName}` : '';
+                        html += `<div class="tree-node"><div class="py-1"><span class="tree-store-icon">&#9632;</span><span class="tree-label-store">Store ${store.id}${name}</span></div></div>`;
+                    });
+                    html += '</div></div>';
+                }
+
+                html += '</div></div>'; // close root children + root
+                treeContainer.innerHTML = html;
+
+                // Wire up expand/collapse toggles
+                treeContainer.querySelectorAll('.tree-toggle').forEach(toggle => {
+                    toggle.addEventListener('click', () => {
+                        const targetId = toggle.getAttribute('data-target');
+                        const children = document.getElementById(targetId);
+                        if (children) {
+                            children.classList.toggle('collapsed');
+                            toggle.classList.toggle('collapsed');
+                        }
+                    });
+                });
+            } catch (error) {
+                treeContainer.innerHTML = `<div class="text-danger">Error loading hierarchy: ${error.message}</div>`;
+            } finally {
+                loading.classList.add('d-none');
+            }
+        }
+
         document.getElementById('btn-cancel-user').addEventListener('click', () => {
             resetUserForm();
         });
@@ -816,6 +1049,7 @@
             renderDisengagements(data.disengagements || []);
             renderEvents(data.events || []);
             renderDayparts(data.daypartSchedule || []);
+            renderMediaRotation(data);
         }
 
         // Rendering Functions (keep as they were)
@@ -1219,6 +1453,204 @@
                 container.appendChild(div);
             });
         }
+        // ===== MEDIA ROTATION =====
+
+        function renderMediaRotation(data = {}) {
+            const rotation = data.mediaRotation || {};
+            const isGeneral = selectedSiteId === 'general';
+
+            document.getElementById('media-rotation-global-controls').classList.toggle('d-none', !isGeneral);
+            document.getElementById('media-rotation-sub-note').classList.toggle('d-none', isGeneral);
+
+            if (isGeneral) {
+                document.getElementById('media-rotation-enabled').checked = rotation.enabled || false;
+                document.getElementById('media-rotation-until').value = rotation.activeUntil || '';
+                document.getElementById('media-rotation-wait').value = rotation.waitMinutes ?? 5;
+                document.getElementById('media-rotation-rest').value = rotation.restMinutes ?? 5;
+            }
+
+            const container = document.getElementById('media-rotation-container');
+            container.innerHTML = '';
+            (rotation.items || []).forEach(item => renderMediaItemRow(item));
+        }
+
+        function renderMediaItemRow(item = {}) {
+            const container = document.getElementById('media-rotation-container');
+            const id = item.id || `item_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            const type = item.type || 'video';
+            const durationMinutes = item.durationSeconds ? (item.durationSeconds / 60) : 3;
+
+            const div = document.createElement('div');
+            div.className = 'card p-2 mb-2 bg-dark border-secondary media-item-row';
+            div.dataset.id = id;
+            div.dataset.type = type;
+
+            const typeBadge = type === 'video'
+                ? '<span class="badge bg-info">Video</span>'
+                : '<span class="badge bg-warning text-dark">PDF</span>';
+
+            const placeholder = type === 'pdf'
+                ? 'Google Drive, GitHub, or direct PDF URL'
+                : 'YouTube, Brightcove, or direct .mp4 URL';
+            const urlField = `<input type="url" class="form-control media-url" placeholder="${placeholder}" value="${item.url || ''}">`;
+
+            const durationLabel = type === 'pdf' ? 'Display Duration' : 'Max Duration';
+            const durationMins = item.durationSeconds ? Math.floor(item.durationSeconds / 60) : (type === 'pdf' ? 3 : '');
+            const durationSecs = item.durationSeconds ? item.durationSeconds % 60 : 0;
+            const durationField = `
+                <div class="col-6 col-md-3">
+                    <label class="form-label small text-muted mb-1">${durationLabel}</label>
+                    <div class="d-flex gap-1 align-items-center">
+                        <input type="number" class="form-control media-duration-min" min="0" step="1" value="${durationMins}" placeholder="0" title="Minutes" style="width:60px">
+                        <span class="text-muted small">m</span>
+                        <input type="number" class="form-control media-duration-sec" min="0" max="59" step="1" value="${durationSecs}" placeholder="0" title="Seconds" style="width:60px">
+                        <span class="text-muted small">s</span>
+                    </div>
+                    ${type === 'video' ? '<small class="text-muted">Brightcove: set a value</small>' : ''}
+                </div>
+            `;
+
+            div.innerHTML = `
+                <div class="row g-2 align-items-center">
+                    <div class="col-auto d-flex flex-column gap-1">
+                        <button class="btn btn-sm btn-outline-secondary py-0 px-1 move-up-btn" type="button">▲</button>
+                        <button class="btn btn-sm btn-outline-secondary py-0 px-1 move-down-btn" type="button">▼</button>
+                    </div>
+                    <div class="col-auto">${typeBadge}</div>
+                    <div class="col-12 col-md-3">
+                        <input type="text" class="form-control media-name" placeholder="Label / Name" value="${item.name || ''}">
+                    </div>
+                    <div class="col-12 col-md-4">${urlField}</div>
+                    ${durationField}
+                    <div class="col-auto ms-auto">
+                        <button class="btn btn-sm btn-danger remove-media-btn" type="button">✕</button>
+                    </div>
+                </div>
+                <div class="row g-2 mt-1 align-items-center border-top border-secondary pt-2">
+                    <div class="col-auto">
+                        <small class="text-muted">Schedule <span class="fw-normal">(optional — leave blank to always show)</span></small>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label small text-muted mb-1">Show From</label>
+                        <input type="datetime-local" class="form-control form-control-sm media-start" value="${item.startDate || ''}" title="Leave blank to show immediately">
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label small text-muted mb-1">Stop Showing After</label>
+                        <input type="datetime-local" class="form-control form-control-sm media-end" value="${item.endDate || ''}" title="Leave blank to show indefinitely">
+                    </div>
+                </div>
+            `;
+
+            div.querySelector('.remove-media-btn').addEventListener('click', () => div.remove());
+            div.querySelector('.move-up-btn').addEventListener('click', () => {
+                const prev = div.previousElementSibling;
+                if (prev && prev.classList.contains('media-item-row')) container.insertBefore(div, prev);
+            });
+            div.querySelector('.move-down-btn').addEventListener('click', () => {
+                const next = div.nextElementSibling;
+                if (next && next.classList.contains('media-item-row')) container.insertBefore(next, div);
+            });
+
+            container.appendChild(div);
+        }
+
+        window.addMediaItem = (type) => renderMediaItemRow({ type });
+
+        async function loadMediaFiles() {
+            const listEl = document.getElementById('media-browse-list');
+            listEl.innerHTML = '<small class="text-muted">Loading...</small>';
+
+            const cfg = getGitHubConfig();
+            if (!cfg || !cfg.owner || !cfg.repo) {
+                listEl.innerHTML = '<small class="text-warning">File browser only works when running on GitHub Pages.</small>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/media`);
+                if (res.status === 404) {
+                    listEl.innerHTML = '<small class="text-muted">No <code>/media</code> folder found in the repo yet. Create the folder and push files to get started.</small>';
+                    return;
+                }
+                if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
+
+                const files = await res.json();
+                const mediaFiles = files.filter(f => f.type === 'file' && /\.(mp4|webm|mov|pdf)$/i.test(f.name));
+
+                if (mediaFiles.length === 0) {
+                    listEl.innerHTML = '<small class="text-muted">No supported files found (.mp4, .webm, .mov, .pdf).</small>';
+                    return;
+                }
+
+                listEl.innerHTML = '';
+                mediaFiles.forEach(file => {
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const type = ext === 'pdf' ? 'pdf' : 'video';
+                    const icon = type === 'pdf' ? '📄' : '🎬';
+                    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+                    const pageUrl = `https://${cfg.owner}.github.io/${cfg.repo}/media/${file.name}`;
+                    const label = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+
+                    const row = document.createElement('div');
+                    row.className = 'd-flex justify-content-between align-items-center py-2 border-bottom border-secondary';
+                    row.innerHTML = `
+                        <span class="small">${icon} <strong>${file.name}</strong> <span class="text-muted ms-1">${sizeMB} MB</span></span>
+                        <button class="btn btn-sm btn-outline-success ms-2" type="button">+ Add</button>
+                    `;
+                    row.querySelector('button').addEventListener('click', () => {
+                        renderMediaItemRow({ type, name: label, url: pageUrl });
+                    });
+                    listEl.appendChild(row);
+                });
+            } catch (err) {
+                listEl.innerHTML = `<small class="text-danger">Could not load files: ${err.message}</small>`;
+            }
+        }
+
+        document.getElementById('media-browse-btn').addEventListener('click', () => {
+            const panel = document.getElementById('media-browse-panel');
+            const opening = panel.classList.contains('d-none');
+            panel.classList.toggle('d-none');
+            if (opening) loadMediaFiles();
+        });
+
+        document.getElementById('media-browse-refresh').addEventListener('click', loadMediaFiles);
+
+        function getMediaRotationFromUI() {
+            const isGeneral = selectedSiteId === 'general';
+            const items = Array.from(document.querySelectorAll('#media-rotation-container .media-item-row')).map(row => {
+                const type = row.dataset.type;
+                const durationInput = row.querySelector('.media-duration');
+                return {
+                    id: row.dataset.id,
+                    type,
+                    name: row.querySelector('.media-name').value.trim(),
+                    url: row.querySelector('.media-url').value.trim(),
+                    durationSeconds: (() => {
+                        const minEl = row.querySelector('.media-duration-min');
+                        const secEl = row.querySelector('.media-duration-sec');
+                        const mins = minEl && minEl.value !== '' ? parseInt(minEl.value, 10) : 0;
+                        const secs = secEl && secEl.value !== '' ? parseInt(secEl.value, 10) : 0;
+                        const total = mins * 60 + secs;
+                        return total > 0 ? total : null;
+                    })(),
+                    startDate: row.querySelector('.media-start').value || null,
+                    endDate: row.querySelector('.media-end').value || null
+                };
+            }).filter(i => i.url);
+
+            if (isGeneral) {
+                return {
+                    enabled: document.getElementById('media-rotation-enabled').checked,
+                    activeUntil: document.getElementById('media-rotation-until').value,
+                    waitMinutes: parseFloat(document.getElementById('media-rotation-wait').value) || 5,
+                    restMinutes: parseFloat(document.getElementById('media-rotation-rest').value) || 5,
+                    items
+                };
+            }
+            return { items };
+        }
+
         window.addEvent = () => {
             const container = document.getElementById('events-container');
             const div = document.createElement('div');
@@ -1293,7 +1725,8 @@
                         color: el.querySelector('.dp-color').value || '#333333',
                         icon: el.querySelector('.dp-icon').value || '',
                         textColor: '#ffffff'
-                    })).filter(dp => dp.name && dp.startTime && dp.endTime)
+                    })).filter(dp => dp.name && dp.startTime && dp.endTime),
+                    mediaRotation: getMediaRotationFromUI()
                 };
 
                 const isSpecialLevel = selectedSiteId === 'general' || selectedSiteId.startsWith('market:') || selectedSiteId.startsWith('district:');
