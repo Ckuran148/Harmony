@@ -322,6 +322,8 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     .sensor-card h3 { font-size: clamp(0.8rem, 10cqw, 1.2rem); }
     .reading { font-size: clamp(1.5rem, 20cqw, 3rem); }
     .signal-row { font-size: clamp(0.8rem, 8cqw, 1.2rem); }
+    /* Shrink reading when offline "Last Reading" line is also showing */
+    .sensor-card:has(.last-reading-indicator) .reading { font-size: clamp(1rem, 14cqw, 2rem); }
 }
 
 /* Sensor Alerts */
