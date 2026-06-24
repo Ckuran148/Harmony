@@ -7,7 +7,7 @@ body {
     height: 100vh;
     display: grid;
     /* Alert (12%), Daypart (8%), Content (Flexible), Sensors (20% - Slightly smaller row) */
-    grid-template-rows: 12% 8% 1fr 12%;
+    grid-template-rows: 12% 8% 1fr max(12%, 80px);
     gap: 15px;
     padding: 20px;
     box-sizing: border-box;
@@ -200,6 +200,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     gap: 0;
     align-items: stretch;
     overflow: hidden;
+    height: 100%; /* prevents Safari from collapsing height when overflow:hidden is set on a flex child */
 }
 
 .sensor-track {
