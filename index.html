@@ -41,17 +41,97 @@
     <div id="daypart-section">Calculating Daypart...</div>
 
     <div class="content-row">
-        <div class="card">
-            <h2>📢 Announcements</h2>
-            <div class="list-container"><ul id="announcements-list"><li>Loading...</li></ul></div>
+        <div class="card rotating-card">
+            <div class="rotating-panel" id="panel-announcements">
+                <h2>📢 Announcements</h2>
+                <div class="list-container"><ul id="announcements-list"><li>Loading...</li></ul></div>
+            </div>
+            <div class="rotating-panel hidden" id="panel-events">
+                <h2>📅 This Week</h2>
+                <div class="list-container"><ul id="events-list"><li>Loading...</li></ul></div>
+            </div>
         </div>
         <div class="card" style="border-top-color: #e00000;"> 
             <h2>🍔 Upcoming LTOs</h2>
             <div class="list-container"><ul id="lto-list"><li>Loading...</li></ul></div>
         </div>
-        <div class="card" style="border-top-color: #e6a800;"> 
-            <h2>📅 This Week</h2>
-            <div class="list-container"><ul id="events-list"><li>Loading...</li></ul></div>
+        <div class="card rotating-card" id="col3-card" style="border-top-color: #0097a7;">
+            <!-- Panel A: Food Safety DFSL -->
+            <div class="rotating-panel" id="panel-food-safety" style="padding: 0;">
+                <div class="fs-card-header">
+                    <span class="fs-icon">🛡️</span>
+                    <div>
+                        <div class="fs-title">Food Safety</div>
+                        <div class="fs-subtitle">DFSL Completion</div>
+                    </div>
+                </div>
+                <div class="fs-section fs-section-top">
+                    <div class="fs-period-label">14 Days</div>
+                    <div class="fs-tiles">
+                        <div class="fs-tile" id="kpi-complete-tile">
+                            <div class="fs-value" id="kpi-complete-val">--</div>
+                            <div class="fs-label">COMPLETION</div>
+                        </div>
+                        <div class="fs-tile" id="kpi-ontime-tile">
+                            <div class="fs-value" id="kpi-ontime-val">--</div>
+                            <div class="fs-label">ON TIME</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fs-section fs-section-bottom">
+                    <div class="fs-period-label">7 Days</div>
+                    <div class="fs-tiles">
+                        <div class="fs-tile" id="kpi-complete-7d-tile">
+                            <div class="fs-value" id="kpi-complete-7d-val">--</div>
+                            <div class="fs-label">COMPLETION</div>
+                        </div>
+                        <div class="fs-tile" id="kpi-ontime-7d-tile">
+                            <div class="fs-value" id="kpi-ontime-7d-val">--</div>
+                            <div class="fs-label">ON TIME</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fs-section fs-section-yesterday">
+                    <div class="fs-period-label">Yesterday</div>
+                    <div class="fs-tiles">
+                        <div class="fs-tile" id="kpi-complete-1d-tile">
+                            <div class="fs-value" id="kpi-complete-1d-val">--</div>
+                            <div class="fs-label">COMPLETION</div>
+                        </div>
+                        <div class="fs-tile" id="kpi-ontime-1d-tile">
+                            <div class="fs-value" id="kpi-ontime-1d-val">--</div>
+                            <div class="fs-label">ON TIME</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Panel B: Chili Tracker -->
+            <div class="rotating-panel hidden" id="panel-chili">
+                <div class="chili-header">
+                    <span class="chili-icon">🍲</span>
+                    <div>
+                        <div class="chili-title">Chili Tracker</div>
+                        <div class="chili-subtitle">Today's Batches</div>
+                    </div>
+                </div>
+                <div id="chili-batches">
+                    <div class="chili-empty">Loading...</div>
+                </div>
+            </div>
+            <!-- Panel C: Chicken Tracker -->
+            <div class="rotating-panel hidden" id="panel-chicken">
+                <div class="chicken-header">
+                    <span class="chicken-icon">🍗</span>
+                    <div>
+                        <div class="chicken-title">Chicken Line</div>
+                        <div class="chicken-subtitle">30-Min Hold Timers</div>
+                    </div>
+                    <div class="chicken-count" id="chicken-count"></div>
+                </div>
+                <div id="chicken-grid">
+                    <div class="chicken-empty">Loading...</div>
+                </div>
+            </div>
         </div>
         <div id="video-panel">
             <video id="media-video" muted playsinline></video>

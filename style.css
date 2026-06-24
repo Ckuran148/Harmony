@@ -7,7 +7,7 @@ body {
     height: 100vh;
     display: grid;
     /* Alert (12%), Daypart (8%), Content (Flexible), Sensors (20% - Slightly smaller row) */
-    grid-template-rows: 12% 8% 1fr 15%; 
+    grid-template-rows: 12% 8% 1fr 12%;
     gap: 15px;
     padding: 20px;
     box-sizing: border-box;
@@ -179,20 +179,68 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 
 /* --- SENSOR ROW (UPDATED FOR SHORTER HEIGHT) --- */
 #sensor-row-container {
-    overflow: hidden; 
-    background-color: #1e1e1e; 
+    overflow: hidden;
+    background-color: #1e1e1e;
     border-radius: 10px;
     border: 1px solid #333;
-    display: flex; 
-    align-items: stretch; 
+    display: flex;
+    align-items: stretch;
     padding: 5px;
 }
 
 #sensor-grid {
     width: 100%;
-    display: flex; 
-    gap: 5px; 
-    justify-content: flex-start; 
+    display: flex;
+    gap: 5px;
+    justify-content: flex-start;
+    overflow: hidden;
+}
+
+/* --- Continuous scroll mode (> 7 sensors) --- */
+#sensor-grid.sensor-scrolling {
+    gap: 0;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.sensor-track {
+    display: flex;
+    gap: 0;           /* gap handled by card margin-right so pixel math is exact */
+    flex-shrink: 0;
+    align-items: stretch;
+}
+
+.sensor-track-animate {
+    animation: sensor-scroll var(--sensor-scroll-duration, 30s) linear infinite;
+}
+
+.sensor-track-animate:hover {
+    animation-play-state: paused;
+}
+
+/* Translate by exactly one set's pixel width (set via JS --sensor-one-set-width) */
+@keyframes sensor-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(calc(-1 * var(--sensor-one-set-width, 1040px))); }
+}
+
+/* Fixed-width cards in scroll mode; margin-right replaces gap for exact seam math */
+#sensor-grid.sensor-scrolling .sensor-card {
+    flex: 0 0 130px;
+    width: 130px;
+    min-width: 130px;
+    margin-right: 5px;
+}
+
+/* Clamp long sensor names to 2 lines in scroll mode */
+#sensor-grid.sensor-scrolling .sensor-card h3 {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
 }
 
 .sensor-card {
@@ -203,7 +251,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     border: 1px solid #444;
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* Pushes signal row to very bottom */
+    justify-content: flex-start;
     flex: 1;
     min-width: 0;
     box-sizing: border-box;
@@ -224,14 +272,14 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     font-size: clamp(0.7rem, 2.5vh, 1rem); 
 }
 
-.reading { 
-    font-weight: 700; 
-    color: #fff; 
-    margin-top: 0;
+.reading {
+    font-weight: 700;
+    color: #fff;
+    margin-top: auto;
     text-align: center;
     line-height: 1.1;
     /* Max height is 5% of screen height */
-    font-size: clamp(1.2rem, 5vh, 2.5rem); 
+    font-size: clamp(1.2rem, 5vh, 2.5rem);
 }
 
 .signal-row { 
@@ -277,8 +325,8 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 }
 
 /* Sensor Alerts */
-.temp-warning { color: #e6a800; } 
-.temp-critical { color: #d9534f; animation: blink 1s step-start infinite; } 
+.temp-warning { color: #e6a800; }
+.temp-critical { color: #d9534f; animation: blink 1s step-start infinite; }
 
 .blink { animation: blink 1s step-start infinite; }
 @keyframes blink { 50% { opacity: 0.5; } }
@@ -286,3 +334,367 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .battery-good { color: #28a745; }
 .battery-med  { color: #e6a800; }
 .battery-low  { color: #d9534f; font-weight: 700; }
+
+/* FOOD SAFETY KPI CARD */
+.food-safety-card { gap: 0; }
+
+.fs-split-card {
+    padding: 0;
+    gap: 0;
+}
+.fs-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px 14px;
+    border-bottom: 2px solid #333;
+    flex-shrink: 0;
+}
+.fs-period-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #666;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+.fs-section {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 20px;
+    overflow: hidden;
+}
+.fs-section-top {
+    border-bottom: 2px solid #333;
+}
+.fs-section-bottom {
+    background-color: #222;
+    border-bottom: 2px solid #333;
+}
+.fs-section-yesterday {
+    background-color: #1e1e1e;
+}
+
+.fs-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #333;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+}
+.fs-icon  { font-size: 2rem; line-height: 1; }
+.fs-title {
+    font-size: clamp(1rem, 2.5vh, 1.4rem);
+    font-weight: 800;
+    color: #ddd;
+    line-height: 1.1;
+}
+.fs-subtitle {
+    font-size: clamp(0.55rem, 1.2vh, 0.72rem);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #777;
+    margin-top: 3px;
+}
+.fs-tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-items: start;
+}
+.fs-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #181818;
+    border-radius: 10px;
+    border: 1px solid #2a2a2a;
+    position: relative;
+    overflow: hidden;
+    gap: 4px;
+    padding: 14px 8px;
+    container-type: inline-size;
+}
+.fs-tile::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 5px;
+    background: #2a2a2a;
+    transition: background 0.4s;
+}
+.fs-tile.good::after { background: #00c853; }
+.fs-tile.warn::after { background: #e6a800; }
+.fs-tile.bad::after  { background: #d9534f; }
+
+.fs-value {
+    font-size: clamp(1rem, 18cqw, 3.8rem);
+    font-weight: 900;
+    color: #888;
+    line-height: 1;
+    transition: color 0.4s;
+}
+.fs-tile.good .fs-value { color: #00c853; }
+.fs-tile.warn .fs-value { color: #e6a800; }
+.fs-tile.bad  .fs-value { color: #d9534f; }
+
+.fs-label {
+    font-size: clamp(0.55rem, 1.3vh, 0.75rem);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    color: #888;
+    padding-bottom: 8px;
+}
+
+/* KPI COLUMN (Food Safety and future metrics) */
+.kpi-period {
+    display: block;
+    color: #555;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-top: -8px;
+    margin-bottom: 12px;
+}
+.kpi-tile {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    border: 1px solid #333;
+    min-height: 0;
+}
+.kpi-tile:last-child { margin-bottom: 0; }
+.kpi-label {
+    font-size: clamp(0.65rem, 1.5vh, 0.85rem);
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+}
+.kpi-value {
+    font-size: clamp(2rem, 6vh, 3.5rem);
+    font-weight: 900;
+    color: #555;
+    line-height: 1.1;
+}
+.kpi-value.good { color: #00c853; }
+.kpi-value.warn { color: #e6a800; }
+.kpi-value.bad  { color: #d9534f; }
+
+/* ROTATING COLUMN 1 (Announcements / This Week) */
+.rotating-card { padding: 0; }
+.rotating-panel {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    background-color: #252525;
+    opacity: 1;
+    transition: opacity 0.8s ease-in-out;
+    overflow: hidden;
+    border-radius: 10px;
+}
+.rotating-panel.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* CHILI TRACKER PANEL */
+.chili-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid #333;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+}
+.chili-icon  { font-size: 2rem; line-height: 1; }
+.chili-title {
+    font-size: clamp(1rem, 2.5vh, 1.4rem);
+    font-weight: 800;
+    color: #ddd;
+    line-height: 1.1;
+}
+.chili-subtitle {
+    font-size: clamp(0.55rem, 1.2vh, 0.72rem);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #777;
+    margin-top: 3px;
+}
+.chili-empty {
+    color: #555;
+    font-size: 1rem;
+    text-align: center;
+    margin-top: 20px;
+}
+.chili-batch {
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    background: #1e1e1e;
+    border: 1px solid #333;
+}
+.chili-batch:last-child { margin-bottom: 0; }
+
+.chili-cooking    { border-left: 4px solid #e6a800; }
+.chili-ready      { border-left: 4px solid #ff9800; background: rgba(255,152,0,0.07); }
+.chili-online     { border-left: 4px solid #00c853; }
+.chili-near-expiry{ border-left: 4px solid #e6a800; }
+.chili-expired    { border-left: 4px solid #444; opacity: 0.55; }
+
+.chili-state-label {
+    font-size: clamp(0.6rem, 1.4vh, 0.78rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #777;
+    margin-bottom: 6px;
+}
+.chili-time-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+.chili-time-label {
+    font-size: clamp(0.6rem, 1.2vh, 0.72rem);
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.chili-time-value {
+    font-size: clamp(1.1rem, 2.8vh, 1.6rem);
+    font-weight: 700;
+    color: #ddd;
+}
+.chili-countdown {
+    font-size: clamp(1.6rem, 4.5vh, 2.6rem);
+    font-weight: 900;
+    color: #00c853;
+    font-family: monospace;
+    line-height: 1;
+    margin-top: 4px;
+}
+.chili-cooking    .chili-countdown { color: #e6a800; }
+.chili-near-expiry .chili-countdown { color: #e6a800; }
+.chili-expired    .chili-countdown { color: #555; }
+.chili-overdue-text { color: #d9534f !important; }
+
+/* CHICKEN TRACKER PANEL */
+.chicken-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid #333;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+}
+.chicken-icon { font-size: 2rem; line-height: 1; }
+.chicken-title {
+    font-size: clamp(1rem, 2.5vh, 1.4rem);
+    font-weight: 800;
+    color: #ddd;
+    line-height: 1.1;
+}
+.chicken-subtitle {
+    font-size: clamp(0.55rem, 1.2vh, 0.72rem);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #777;
+    margin-top: 3px;
+}
+.chicken-count {
+    margin-left: auto;
+    font-size: clamp(0.6rem, 1.3vh, 0.78rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #555;
+}
+.chicken-empty {
+    color: #555;
+    font-size: 1rem;
+    text-align: center;
+    margin-top: 20px;
+    grid-column: 1 / -1;
+}
+
+#chicken-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    overflow-y: auto;
+    align-content: start;
+}
+
+.chicken-card {
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #1e1e1e;
+    border: 1px solid #2a2a2a;
+    border-left: 4px solid #00c853;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+.chicken-fresh    { border-left-color: #00c853; }
+.chicken-warn     { border-left-color: #e6a800; }
+.chicken-hot      { border-left-color: #d9534f; }
+.chicken-expired  { border-left-color: #444; opacity: 0.5; }
+
+.chicken-card-label {
+    font-size: clamp(0.55rem, 1.1vh, 0.68rem);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #555;
+    font-weight: 700;
+}
+.chicken-card-exp {
+    font-size: clamp(0.62rem, 1.3vh, 0.78rem);
+    color: #888;
+}
+.chicken-card-countdown {
+    font-size: clamp(1.4rem, 3.5vh, 2.2rem);
+    font-weight: 900;
+    font-family: monospace;
+    line-height: 1.1;
+    margin: 3px 0 2px;
+    color: #00c853;
+}
+.chicken-fresh   .chicken-card-countdown { color: #00c853; }
+.chicken-warn    .chicken-card-countdown { color: #e6a800; }
+.chicken-hot     .chicken-card-countdown { color: #d9534f; }
+.chicken-expired .chicken-card-countdown { color: #555; font-size: clamp(0.75rem, 1.8vh, 0.95rem); }
+
+.chicken-card-bar {
+    height: 4px;
+    background: #2a2a2a;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 2px;
+}
+.chicken-card-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s linear, background-color 0.5s;
+    background-color: #00c853;
+}
+.chicken-warn    .chicken-card-bar-fill { background-color: #e6a800; }
+.chicken-hot     .chicken-card-bar-fill { background-color: #d9534f; }
+.chicken-expired .chicken-card-bar-fill { background-color: #444; }
