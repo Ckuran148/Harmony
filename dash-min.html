@@ -12,7 +12,7 @@
             gap: 8px;
             padding: 10px;
             /* Give sensors more room (20%), tighten alert/daypart rows */
-            grid-template-rows: 10% 7% 1fr 20%;
+            grid-template-rows: 10% 7% 1fr 14%;
         }
 
         #site-indicator {
@@ -29,6 +29,8 @@
         .content-row { gap: 10px; }
 
         .card { padding: 10px 12px; }
+        .rotating-card { padding: 0; }
+        .rotating-panel { padding: 10px 12px; }
 
         h2 {
             font-size: 1.3rem;
@@ -51,18 +53,43 @@
         .jolt-section      { padding: 8px 12px; }
         .jolt-header-small { font-size: 1rem; margin-bottom: 5px; padding-bottom: 4px; }
 
+        /* Food Safety split card — compact overrides */
+        .fs-card-header    { gap: 8px; padding: 8px 10px; }
+        .fs-icon           { font-size: 1.4rem; }
+        .fs-title          { font-size: 1rem; }
+        .fs-subtitle       { font-size: 0.6rem; margin-top: 1px; }
+        .fs-section        { padding: 6px 10px; }
+        .fs-period-label   { font-size: 0.65rem; margin-bottom: 5px; }
+        .fs-tiles          { gap: 6px; }
+        .fs-tile           { padding: 10px 6px; }
+        /* .fs-value font-size handled by container query (18cqw) in style.css */
+        .fs-label          { font-size: 0.6rem; padding-bottom: 5px; letter-spacing: 1px; }
+
+        /* Chili tracker compact overrides */
+        .chili-header      { padding-bottom: 8px; margin-bottom: 8px; gap: 8px; }
+        .chili-icon        { font-size: 1.4rem; }
+        .chili-title       { font-size: 1rem; }
+        .chili-subtitle    { font-size: 0.6rem; margin-top: 1px; }
+        .chili-batch       { padding: 8px 10px; margin-bottom: 6px; }
+        .chili-state-label { font-size: 0.65rem; margin-bottom: 4px; }
+        .chili-time-value  { font-size: 1.1rem; }
+        .chili-countdown   { font-size: 1.5rem; margin-top: 2px; }
+
+        /* Chicken tracker compact overrides */
+        .chicken-header        { padding-bottom: 8px; margin-bottom: 8px; gap: 8px; }
+        .chicken-icon          { font-size: 1.4rem; }
+        .chicken-title         { font-size: 1rem; }
+        .chicken-subtitle      { font-size: 0.6rem; margin-top: 1px; }
+        .chicken-card          { padding: 7px 9px; gap: 1px; }
+        .chicken-card-countdown{ font-size: 1.3rem; }
+        #chicken-grid          { gap: 6px; }
+
         /* Sensor row */
         #sensor-row-container { padding: 4px; }
         /* height: 100% ensures sensor-grid fills the row so cards can stretch into it */
         #sensor-grid          { gap: 4px; height: 100%; align-items: stretch; }
         .sensor-card          { padding: 4px 6px; }
 
-        /* Auto margins absorb all free space above and below, centering the reading
-           between the sensor name and signal row without disturbing space-between */
-        .reading {
-            margin-top: auto;
-            margin-bottom: auto;
-        }
 
         /* VIDEO PANEL — hidden by default, spans the first 3 grid columns */
         #video-panel {
@@ -114,17 +141,97 @@
     <div id="daypart-section">Calculating Daypart...</div>
 
     <div class="content-row">
-        <div class="card">
-            <h2>📢 Announcements</h2>
-            <div class="list-container"><ul id="announcements-list"><li>Loading...</li></ul></div>
+        <div class="card rotating-card">
+            <div class="rotating-panel" id="panel-announcements">
+                <h2>📢 Announcements</h2>
+                <div class="list-container"><ul id="announcements-list"><li>Loading...</li></ul></div>
+            </div>
+            <div class="rotating-panel hidden" id="panel-events">
+                <h2>📅 This Week</h2>
+                <div class="list-container"><ul id="events-list"><li>Loading...</li></ul></div>
+            </div>
         </div>
         <div class="card" style="border-top-color: #e00000;"> 
             <h2>🍔 Upcoming LTOs</h2>
             <div class="list-container"><ul id="lto-list"><li>Loading...</li></ul></div>
         </div>
-        <div class="card" style="border-top-color: #e6a800;"> 
-            <h2>📅 This Week</h2>
-            <div class="list-container"><ul id="events-list"><li>Loading...</li></ul></div>
+        <div class="card rotating-card" id="col3-card" style="border-top-color: #0097a7;">
+            <!-- Panel A: Food Safety DFSL -->
+            <div class="rotating-panel" id="panel-food-safety" style="padding: 0;">
+                <div class="fs-card-header">
+                    <span class="fs-icon">🛡️</span>
+                    <div>
+                        <div class="fs-title">Food Safety</div>
+                        <div class="fs-subtitle">DFSL Completion</div>
+                    </div>
+                </div>
+                <div class="fs-section fs-section-top">
+                    <div class="fs-period-label">14 Days</div>
+                    <div class="fs-tiles">
+                        <div class="fs-tile" id="kpi-complete-tile">
+                            <div class="fs-value" id="kpi-complete-val">--</div>
+                            <div class="fs-label">COMPLETION</div>
+                        </div>
+                        <div class="fs-tile" id="kpi-ontime-tile">
+                            <div class="fs-value" id="kpi-ontime-val">--</div>
+                            <div class="fs-label">ON TIME</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fs-section fs-section-bottom">
+                    <div class="fs-period-label">7 Days</div>
+                    <div class="fs-tiles">
+                        <div class="fs-tile" id="kpi-complete-7d-tile">
+                            <div class="fs-value" id="kpi-complete-7d-val">--</div>
+                            <div class="fs-label">COMPLETION</div>
+                        </div>
+                        <div class="fs-tile" id="kpi-ontime-7d-tile">
+                            <div class="fs-value" id="kpi-ontime-7d-val">--</div>
+                            <div class="fs-label">ON TIME</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fs-section fs-section-yesterday">
+                    <div class="fs-period-label">Yesterday</div>
+                    <div class="fs-tiles">
+                        <div class="fs-tile" id="kpi-complete-1d-tile">
+                            <div class="fs-value" id="kpi-complete-1d-val">--</div>
+                            <div class="fs-label">COMPLETION</div>
+                        </div>
+                        <div class="fs-tile" id="kpi-ontime-1d-tile">
+                            <div class="fs-value" id="kpi-ontime-1d-val">--</div>
+                            <div class="fs-label">ON TIME</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Panel B: Chili Tracker -->
+            <div class="rotating-panel hidden" id="panel-chili">
+                <div class="chili-header">
+                    <span class="chili-icon">🍲</span>
+                    <div>
+                        <div class="chili-title">Chili Tracker</div>
+                        <div class="chili-subtitle">Today's Batches</div>
+                    </div>
+                </div>
+                <div id="chili-batches">
+                    <div class="chili-empty">Loading...</div>
+                </div>
+            </div>
+            <!-- Panel C: Chicken Tracker -->
+            <div class="rotating-panel hidden" id="panel-chicken">
+                <div class="chicken-header">
+                    <span class="chicken-icon">🍗</span>
+                    <div>
+                        <div class="chicken-title">Chicken Line</div>
+                        <div class="chicken-subtitle">30-Min Hold Timers</div>
+                    </div>
+                    <div class="chicken-count" id="chicken-count"></div>
+                </div>
+                <div id="chicken-grid">
+                    <div class="chicken-empty">Loading...</div>
+                </div>
+            </div>
         </div>
         <div id="video-panel">
             <video id="media-video" muted playsinline></video>
