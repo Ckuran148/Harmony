@@ -78,6 +78,8 @@ const CHICKEN_LABEL_IDS    = [...CHICKEN_DEDICATED_IDS, ...CHICKEN_GENERIC_IDS];
 const CHICKEN_HOLD_MS          = 30 * 60 * 1000;
 const CHICKEN_LOOKBACK_S       = 35 * 60;
 const FOOD_SAFETY_REFRESH_RATE = 6 * 60 * 60 * 1000;
+// index.html is on large TVs — scroll only if > 12 cards; dash-min scrolls at > 7
+const SENSOR_SCROLL_THRESHOLD  = window.location.pathname.toLowerCase().includes('dash-min') ? 7 : 12;
 
 const CHILI_LABEL_QUERY = `
   query LabelReports($filter: LabelReportsFilterInput!, $mode: ModeInput!) {
@@ -412,7 +414,7 @@ async function fetchSensors(locationId) {
 
     if (sensors.length === 0) {
       grid.innerHTML = "<div style='color:#555; padding:10px;'>No Sensors Found</div>";
-    } else if (sensors.length > 7) {
+    } else if (sensors.length > SENSOR_SCROLL_THRESHOLD) {
       grid.classList.add("sensor-scrolling");
       const track = document.createElement("div");
       track.className = "sensor-track sensor-track-animate";
