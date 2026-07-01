@@ -348,24 +348,24 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 16px 20px 14px;
+    padding: 10px 20px 8px;
     border-bottom: 2px solid #333;
     flex-shrink: 0;
 }
 .fs-period-label {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    color: #666;
-    margin-bottom: 8px;
+    color: #aaa;
+    margin-bottom: 4px;
     flex-shrink: 0;
 }
 .fs-section {
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
-    padding: 16px 20px;
+    padding: 8px 20px;
     overflow: hidden;
 }
 .fs-section-top {
@@ -399,45 +399,38 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     font-size: clamp(0.55rem, 1.2vh, 0.72rem);
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #777;
+    color: #bbb;
     margin-top: 3px;
 }
 .fs-tiles {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    grid-template-columns: 1fr;
+    gap: 6px;
     align-items: start;
 }
 .fs-tile {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     background: #181818;
     border-radius: 10px;
     border: 1px solid #2a2a2a;
     position: relative;
     overflow: hidden;
-    gap: 4px;
-    padding: 14px 8px;
+    gap: 8px;
+    padding: 8px 28px 8px 16px;
+    border-left: 5px solid #2a2a2a;
     container-type: inline-size;
 }
-.fs-tile::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 5px;
-    background: #2a2a2a;
-    transition: background 0.4s;
-}
-.fs-tile.good::after { background: #00c853; }
-.fs-tile.warn::after { background: #e6a800; }
-.fs-tile.bad::after  { background: #d9534f; }
+.fs-tile.good { border-left-color: #00c853; }
+.fs-tile.warn { border-left-color: #e6a800; }
+.fs-tile.bad  { border-left-color: #d9534f; }
 
 .fs-value {
-    font-size: clamp(1rem, 18cqw, 3.8rem);
+    font-size: clamp(1.4rem, 10cqw, 3rem);
     font-weight: 900;
-    color: #888;
+    color: #ccc;
     line-height: 1;
     transition: color 0.4s;
 }
@@ -446,12 +439,12 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .fs-tile.bad  .fs-value { color: #d9534f; }
 
 .fs-label {
-    font-size: clamp(0.55rem, 1.3vh, 0.75rem);
+    font-size: clamp(0.75rem, 1.8vh, 1rem);
     text-transform: uppercase;
     letter-spacing: 1.5px;
     font-weight: 700;
-    color: #888;
-    padding-bottom: 8px;
+    color: #ccc;
+    padding-bottom: 0;
 }
 
 /* KPI COLUMN (Food Safety and future metrics) */
@@ -527,18 +520,18 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .chili-title {
     font-size: clamp(1rem, 2.5vh, 1.4rem);
     font-weight: 800;
-    color: #ddd;
+    color: #fff;
     line-height: 1.1;
 }
 .chili-subtitle {
     font-size: clamp(0.55rem, 1.2vh, 0.72rem);
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #777;
+    color: #ddd;
     margin-top: 3px;
 }
 .chili-empty {
-    color: #555;
+    color: #ddd;
     font-size: 1rem;
     text-align: center;
     margin-top: 20px;
@@ -563,7 +556,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    color: #777;
+    color: #ddd;
     margin-bottom: 6px;
 }
 .chili-time-row {
@@ -574,14 +567,14 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 }
 .chili-time-label {
     font-size: clamp(0.6rem, 1.2vh, 0.72rem);
-    color: #555;
+    color: #ddd;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 .chili-time-value {
     font-size: clamp(1.1rem, 2.8vh, 1.6rem);
     font-weight: 700;
-    color: #ddd;
+    color: #fff;
 }
 .chili-countdown {
     font-size: clamp(1.6rem, 4.5vh, 2.6rem);
@@ -610,14 +603,14 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .chicken-title {
     font-size: clamp(1rem, 2.5vh, 1.4rem);
     font-weight: 800;
-    color: #ddd;
+    color: #fff;
     line-height: 1.1;
 }
 .chicken-subtitle {
     font-size: clamp(0.55rem, 1.2vh, 0.72rem);
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #777;
+    color: #ddd;
     margin-top: 3px;
 }
 .chicken-count {
@@ -626,10 +619,10 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #555;
+    color: #ddd;
 }
 .chicken-empty {
-    color: #555;
+    color: #ddd;
     font-size: 1rem;
     text-align: center;
     margin-top: 20px;
@@ -664,12 +657,12 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     font-size: clamp(0.55rem, 1.1vh, 0.68rem);
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #555;
+    color: #ddd;
     font-weight: 700;
 }
 .chicken-card-exp {
     font-size: clamp(0.62rem, 1.3vh, 0.78rem);
-    color: #888;
+    color: #eee;
 }
 .chicken-card-countdown {
     font-size: clamp(1.4rem, 3.5vh, 2.2rem);
