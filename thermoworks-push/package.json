@@ -1,0 +1,14 @@
+{
+  "name": "thermoworks-push",
+  "version": "1.0.0",
+  "description": "Pushes ThermoWorks Cloud sensor data to Firestore for the Harmony dashboard",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "thermoworks-sdk": "^1.0.0",
+    "firebase-admin": "^12.0.0"
+  }
+}

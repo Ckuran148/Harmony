@@ -254,6 +254,20 @@
                             </div>
                         </div>
 
+                        <!-- ThermoWorks Section (store-level only) -->
+                        <div id="thermoworks-section" class="mb-3 d-none">
+                            <div class="card p-3" style="background:#1a1a1a; border:1px solid #333">
+                                <h5 class="mb-3" style="color:#0d6efd">ThermoWorks Sensors</h5>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="tw-enabled">
+                                    <label class="form-check-label" for="tw-enabled">Enable ThermoWorks sensors for this store</label>
+                                </div>
+                                <label class="form-label small text-muted">Device Serials</label>
+                                <div id="tw-serials-container"></div>
+                                <button class="btn btn-sm btn-outline-info mt-2" type="button" onclick="addTwSerial()">+ Add Device</button>
+                            </div>
+                        </div>
+
                         <button id="save-btn" class="btn btn-primary btn-lg w-100">Save Changes</button>
                     </div>
                     <div id="no-site-selected" class="text-center mt-5">
@@ -1050,6 +1064,19 @@
             renderEvents(data.events || []);
             renderDayparts(data.daypartSchedule || []);
             renderMediaRotation(data);
+
+            // ThermoWorks: show only for store-level edits
+            const twSection = document.getElementById('thermoworks-section');
+            const isStoreLevel = id !== 'general' && !id.startsWith('market:') && !id.startsWith('district:');
+            if (twSection) {
+                if (isStoreLevel) {
+                    twSection.classList.remove('d-none');
+                    document.getElementById('tw-enabled').checked = data.thermoworks?.enabled || false;
+                    renderTwSerials(data.thermoworks?.deviceSerials || []);
+                } else {
+                    twSection.classList.add('d-none');
+                }
+            }
         }
 
         // Rendering Functions (keep as they were)
@@ -1455,6 +1482,36 @@
         }
         // ===== MEDIA ROTATION =====
 
+        // --- ThermoWorks helpers ---
+        function renderTwSerials(serials) {
+            const container = document.getElementById('tw-serials-container');
+            container.innerHTML = '';
+            serials.forEach(serial => addTwSerialRow(serial));
+        }
+
+        function addTwSerialRow(serial = '') {
+            const container = document.getElementById('tw-serials-container');
+            const div = document.createElement('div');
+            div.className = 'd-flex gap-2 mb-2 align-items-center';
+            div.innerHTML = `
+                <input type="text" class="form-control tw-serial-input" value="${serial}" placeholder="e.g. F4:2D:C9:85:DA:04">
+                <button class="btn btn-sm btn-outline-danger" type="button" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(div);
+        }
+
+        window.addTwSerial = function() {
+            addTwSerialRow('');
+        };
+
+        function getTwDataFromUI() {
+            const enabled = document.getElementById('tw-enabled')?.checked || false;
+            const serials = Array.from(document.querySelectorAll('#tw-serials-container .tw-serial-input'))
+                .map(input => input.value.trim())
+                .filter(s => s.length > 0);
+            return { enabled, deviceSerials: serials };
+        }
+
         function renderMediaRotation(data = {}) {
             const rotation = data.mediaRotation || {};
             const isGeneral = selectedSiteId === 'general';
@@ -1739,7 +1796,7 @@
                 const isSpecialLevel = selectedSiteId === 'general' || selectedSiteId.startsWith('market:') || selectedSiteId.startsWith('district:');
 
                 if (!isSpecialLevel) {
-                    // removed inputs
+                    data.thermoworks = getTwDataFromUI();
                 }
 
                 if (selectedSiteId === 'general') {

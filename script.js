@@ -149,6 +149,12 @@ let joltScrollIntervalCurrent = null;
 let joltScrollIntervalUpcoming = null;
 let lastJoltFetch = 0;
 
+// ThermoWorks state
+let twUnsubscribes = [];
+let twDevicesData = {};
+let twEnabled = false;
+let twDeviceSerials = [];
+
 // --- CORE FUNCTION ---
 async function fetchData() {
   if (!storeID) {
@@ -292,6 +298,23 @@ async function fetchData() {
       } else if (!cachedJoltId) {
         document.getElementById("jolt-list-current").innerHTML =
           "<li>No Jolt ID</li>";
+      }
+
+      // ThermoWorks listener setup (once per session)
+      if (storeData.thermoworks?.enabled && storeData.thermoworks?.deviceSerials?.length > 0 && twUnsubscribes.length === 0) {
+        twEnabled = true;
+        twDeviceSerials = storeData.thermoworks.deviceSerials;
+        for (const serial of twDeviceSerials) {
+          const unsub = onSnapshot(doc(db, "thermoworks", serial), (snap) => {
+            if (snap.exists()) {
+              twDevicesData[serial] = snap.data();
+            } else {
+              delete twDevicesData[serial];
+            }
+            renderThermoworksCards();
+          });
+          twUnsubscribes.push(unsub);
+        }
       }
     }
   } catch (error) {
@@ -453,29 +476,17 @@ async function fetchSensors(locationId) {
     grid.classList.remove("sensor-scrolling");
     grid.style.removeProperty("--sensor-scroll-duration");
 
-    if (sensors.length === 0) {
-      grid.innerHTML = "<div style='color:#555; padding:10px;'>No Sensors Found</div>";
-    } else if (sensors.length > SENSOR_SCROLL_THRESHOLD) {
-      grid.classList.add("sensor-scrolling");
-      const track = document.createElement("div");
-      track.className = "sensor-track sensor-track-animate";
-
-      // Card width (130) + margin-right (5) = 135px per card slot.
-      // Enough copies so the track always exceeds viewport_width + one_set_width,
-      // guaranteeing no empty space appears on the right during the scroll.
-      const CARD_SLOT = 135;
-      const oneSetWidth = sensors.length * CARD_SLOT;
-      const copies = Math.ceil(window.innerWidth / oneSetWidth) + 2;
-      for (let i = 0; i < copies; i++) {
-        sensors.forEach((s) => renderSensorCard(s, track));
-      }
-
-      const duration = Math.max(28, sensors.length * 4);
-      grid.style.setProperty("--sensor-scroll-duration", `${duration}s`);
-      grid.style.setProperty("--sensor-one-set-width", `${oneSetWidth}px`);
-      grid.appendChild(track);
-    } else {
+    if (sensors.length > 0) {
       sensors.forEach((s) => renderSensorCard(s, grid));
+    }
+
+    // Append TW cards and apply scroll logic for all combined cards
+    renderThermoworksCards();
+    updateSensorScroll();
+
+    // Show fallback only if no cards at all (no Jolt + no TW)
+    if (grid.querySelectorAll(".sensor-card").length === 0 && !grid.querySelector(".sensor-track")) {
+      grid.innerHTML = "<div style='color:#555; padding:10px;'>No Sensors Found</div>";
     }
   } catch (err) {
     console.error("Sensor Error", err);
@@ -530,6 +541,101 @@ function renderSensorCard(sensor, grid) {
         </div>
     `;
   grid.appendChild(card);
+}
+
+// --- ThermoWorks Card Rendering ---
+
+function renderThermoworksCards() {
+  const grid = document.getElementById("sensor-grid");
+  if (!grid) return;
+
+  // Remove existing TW cards (for re-render on snapshot update)
+  grid.querySelectorAll(".thermoworks-card").forEach((el) => el.remove());
+
+  if (!twEnabled || Object.keys(twDevicesData).length === 0) return;
+
+  for (const serial of Object.keys(twDevicesData)) {
+    const device = twDevicesData[serial];
+    if (!device || !device.channels) continue;
+
+    const sixtyMinAgo = Date.now() - 60 * 60 * 1000;
+    const lastSeenMs = device.lastSeen ? new Date(device.lastSeen).getTime() : 0;
+    const offline = lastSeenMs < sixtyMinAgo;
+
+    for (const chNum of Object.keys(device.channels)) {
+      const ch = device.channels[chNum];
+
+      let tempClass = "";
+      if (offline) {
+        tempClass = "blink";
+      } else if (ch.alarmHigh?.alarming) {
+        tempClass = "temp-critical";
+      } else if (ch.alarmLow?.alarming) {
+        tempClass = "temp-warning";
+      }
+
+      const valueStr =
+        ch.value != null ? `${Number(ch.value).toFixed(1)}\u00B0F` : "N/A";
+
+      const card = document.createElement("div");
+      card.className = "sensor-card thermoworks-card";
+      card.innerHTML = `
+        <h3>${ch.label || device.deviceLabel || serial}</h3>
+        <div class="reading ${tempClass}">${valueStr}</div>
+        ${offline ? '<div class="last-reading-indicator">Last Reading</div>' : ""}
+        <div class="signal-row">
+            <span class="tw-badge">TW</span>
+            <span class="sensor-status-text" style="color: #888;">${offline ? "Offline" : "On Line"}</span>
+        </div>
+      `;
+      grid.appendChild(card);
+    }
+  }
+
+  updateSensorScroll();
+}
+
+function updateSensorScroll() {
+  const grid = document.getElementById("sensor-grid");
+  if (!grid) return;
+
+  // Remove any existing scroll track (reset)
+  const existingTrack = grid.querySelector(".sensor-track");
+  if (existingTrack) existingTrack.remove();
+
+  grid.classList.remove("sensor-scrolling");
+  grid.style.removeProperty("--sensor-scroll-duration");
+  grid.style.removeProperty("--sensor-one-set-width");
+
+  const allCards = Array.from(grid.querySelectorAll(".sensor-card"));
+  const count = allCards.length;
+
+  if (count > SENSOR_SCROLL_THRESHOLD) {
+    grid.classList.add("sensor-scrolling");
+
+    const track = document.createElement("div");
+    track.className = "sensor-track sensor-track-animate";
+
+    const CARD_SLOT = 135;
+    const oneSetWidth = count * CARD_SLOT;
+    const copies = Math.ceil(window.innerWidth / oneSetWidth) + 2;
+
+    // Move original cards into first set of track
+    for (const card of allCards) {
+      track.appendChild(card);
+    }
+    // Clone additional sets for seamless loop
+    for (let i = 1; i < copies; i++) {
+      for (const card of allCards) {
+        track.appendChild(card.cloneNode(true));
+      }
+    }
+
+    const duration = Math.max(28, count * 4);
+    grid.style.setProperty("--sensor-scroll-duration", `${duration}s`);
+    grid.style.setProperty("--sensor-one-set-width", `${oneSetWidth}px`);
+    grid.appendChild(track);
+  }
 }
 
 // --- 3. FOOD SAFETY KPI ---

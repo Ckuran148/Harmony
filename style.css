@@ -693,3 +693,20 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .chicken-warn    .chicken-card-bar-fill { background-color: #e6a800; }
 .chicken-hot     .chicken-card-bar-fill { background-color: #d9534f; }
 .chicken-expired .chicken-card-bar-fill { background-color: #444; }
+
+/* ThermoWorks sensor cards */
+.sensor-card.thermoworks-card {
+    border-left: 3px solid #0d6efd;
+}
+.tw-badge {
+    display: inline-block;
+    background: #0d6efd;
+    color: #fff;
+    font-size: 0.55rem;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+    vertical-align: middle;
+}
