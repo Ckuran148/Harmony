@@ -153,7 +153,7 @@ let lastJoltFetch = 0;
 let twUnsubscribes = [];
 let twDevicesData = {};
 let twEnabled = false;
-let twDeviceSerials = [];
+let twDevicesConfig = [];  // array of { serial, channels[] }
 
 // --- CORE FUNCTION ---
 async function fetchData() {
@@ -301,19 +301,24 @@ async function fetchData() {
       }
 
       // ThermoWorks listener setup (once per session)
-      if (storeData.thermoworks?.enabled && storeData.thermoworks?.deviceSerials?.length > 0 && twUnsubscribes.length === 0) {
-        twEnabled = true;
-        twDeviceSerials = storeData.thermoworks.deviceSerials;
-        for (const serial of twDeviceSerials) {
-          const unsub = onSnapshot(doc(db, "thermoworks", serial), (snap) => {
-            if (snap.exists()) {
-              twDevicesData[serial] = snap.data();
-            } else {
-              delete twDevicesData[serial];
-            }
-            renderThermoworksCards();
-          });
-          twUnsubscribes.push(unsub);
+      const twCfg = storeData.thermoworks;
+      if (twCfg?.enabled && twUnsubscribes.length === 0) {
+        // Support both new (devices) and old (deviceSerials) format
+        const devices = twCfg.devices || (twCfg.deviceSerials || []).map(s => ({ serial: s, channels: [] }));
+        if (devices.length > 0) {
+          twEnabled = true;
+          twDevicesConfig = devices;
+          for (const dev of twDevicesConfig) {
+            const unsub = onSnapshot(doc(db, "thermoworks", dev.serial), (snap) => {
+              if (snap.exists()) {
+                twDevicesData[dev.serial] = snap.data();
+              } else {
+                delete twDevicesData[dev.serial];
+              }
+              renderThermoworksCards();
+            });
+            twUnsubscribes.push(unsub);
+          }
         }
       }
     }
@@ -554,15 +559,20 @@ function renderThermoworksCards() {
 
   if (!twEnabled || Object.keys(twDevicesData).length === 0) return;
 
-  for (const serial of Object.keys(twDevicesData)) {
-    const device = twDevicesData[serial];
+  for (const devCfg of twDevicesConfig) {
+    const device = twDevicesData[devCfg.serial];
     if (!device || !device.channels) continue;
 
     const sixtyMinAgo = Date.now() - 60 * 60 * 1000;
     const lastSeenMs = device.lastSeen ? new Date(device.lastSeen).getTime() : 0;
     const offline = lastSeenMs < sixtyMinAgo;
 
-    for (const chNum of Object.keys(device.channels)) {
+    // Filter to configured channels, or show all if none specified
+    const channelKeys = devCfg.channels && devCfg.channels.length > 0
+      ? devCfg.channels.filter(ch => device.channels[ch])
+      : Object.keys(device.channels);
+
+    for (const chNum of channelKeys) {
       const ch = device.channels[chNum];
 
       let tempClass = "";

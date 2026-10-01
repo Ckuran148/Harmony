@@ -262,9 +262,9 @@
                                     <input class="form-check-input" type="checkbox" id="tw-enabled">
                                     <label class="form-check-label" for="tw-enabled">Enable ThermoWorks sensors for this store</label>
                                 </div>
-                                <label class="form-label small text-muted">Device Serials</label>
-                                <div id="tw-serials-container"></div>
-                                <button class="btn btn-sm btn-outline-info mt-2" type="button" onclick="addTwSerial()">+ Add Device</button>
+                                <label class="form-label small text-muted">Devices</label>
+                                <div id="tw-devices-container"></div>
+                                <button class="btn btn-sm btn-outline-info mt-2" type="button" onclick="addTwDevice()">+ Add Device</button>
                             </div>
                         </div>
 
@@ -1072,7 +1072,10 @@
                 if (isStoreLevel) {
                     twSection.classList.remove('d-none');
                     document.getElementById('tw-enabled').checked = data.thermoworks?.enabled || false;
-                    renderTwSerials(data.thermoworks?.deviceSerials || []);
+                    // Support both old (deviceSerials) and new (devices) format
+                    const twDevices = data.thermoworks?.devices
+                        || (data.thermoworks?.deviceSerials || []).map(s => ({ serial: s, channels: [] }));
+                    renderTwDevices(twDevices);
                 } else {
                     twSection.classList.add('d-none');
                 }
@@ -1483,33 +1486,39 @@
         // ===== MEDIA ROTATION =====
 
         // --- ThermoWorks helpers ---
-        function renderTwSerials(serials) {
-            const container = document.getElementById('tw-serials-container');
+        function renderTwDevices(devices) {
+            const container = document.getElementById('tw-devices-container');
             container.innerHTML = '';
-            serials.forEach(serial => addTwSerialRow(serial));
+            devices.forEach(dev => addTwDeviceRow(dev.serial, dev.channels));
         }
 
-        function addTwSerialRow(serial = '') {
-            const container = document.getElementById('tw-serials-container');
+        function addTwDeviceRow(serial = '', channels = []) {
+            const container = document.getElementById('tw-devices-container');
             const div = document.createElement('div');
-            div.className = 'd-flex gap-2 mb-2 align-items-center';
+            div.className = 'd-flex gap-2 mb-2 align-items-center tw-device-row';
             div.innerHTML = `
-                <input type="text" class="form-control tw-serial-input" value="${serial}" placeholder="e.g. F4:2D:C9:85:DA:04">
+                <input type="text" class="form-control tw-serial-input" value="${serial}" placeholder="Serial (e.g. F4:2D:C9:85:DA:04)" style="flex:2">
+                <input type="text" class="form-control tw-channels-input" value="${channels.join(', ')}" placeholder="Channels (e.g. 2 or 1, 2)" style="flex:1" title="Comma-separated channel numbers. Leave blank for all.">
                 <button class="btn btn-sm btn-outline-danger" type="button" onclick="this.parentElement.remove()">✕</button>
             `;
             container.appendChild(div);
         }
 
-        window.addTwSerial = function() {
-            addTwSerialRow('');
+        window.addTwDevice = function() {
+            addTwDeviceRow('', []);
         };
 
         function getTwDataFromUI() {
             const enabled = document.getElementById('tw-enabled')?.checked || false;
-            const serials = Array.from(document.querySelectorAll('#tw-serials-container .tw-serial-input'))
-                .map(input => input.value.trim())
-                .filter(s => s.length > 0);
-            return { enabled, deviceSerials: serials };
+            const devices = Array.from(document.querySelectorAll('#tw-devices-container .tw-device-row'))
+                .map(row => {
+                    const serial = row.querySelector('.tw-serial-input').value.trim();
+                    const chStr = row.querySelector('.tw-channels-input').value.trim();
+                    const channels = chStr ? chStr.split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
+                    return { serial, channels };
+                })
+                .filter(d => d.serial.length > 0);
+            return { enabled, devices };
         }
 
         function renderMediaRotation(data = {}) {
