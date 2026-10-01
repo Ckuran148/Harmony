@@ -315,11 +315,8 @@ async function fetchData() {
               } else {
                 delete twDevicesData[dev.serial];
               }
-              // Safe re-render: remove scroll track first so cards are
-              // back as direct children, then swap TW cards, then rebuild scroll
-              unpackSensorTrack();
-              renderThermoworksCards();
-              updateSensorScroll();
+              // Data only — don't touch the DOM here.
+              // TW cards are rendered inside fetchSensors() on each Jolt cycle.
             });
             twUnsubscribes.push(unsub);
           }
@@ -617,35 +614,16 @@ function renderThermoworksCards() {
   }
 }
 
-function unpackSensorTrack() {
-  const grid = document.getElementById("sensor-grid");
-  if (!grid) return;
-  const track = grid.querySelector(".sensor-track");
-  if (!track) return;
-
-  // Move original cards (one set) back to grid, discard clones
-  const seen = new Set();
-  Array.from(track.querySelectorAll(".sensor-card")).forEach((card) => {
-    // Cards were cloned for seamless scroll — keep only the first occurrence
-    // Use the card's h3 text + class as a dedup key
-    const key = card.className + "|" + (card.querySelector("h3")?.textContent || "");
-    if (!seen.has(key)) {
-      seen.add(key);
-      grid.appendChild(card);
-    }
-  });
-  track.remove();
-  grid.classList.remove("sensor-scrolling");
-  grid.style.removeProperty("--sensor-scroll-duration");
-  grid.style.removeProperty("--sensor-one-set-width");
-}
-
 function updateSensorScroll() {
   const grid = document.getElementById("sensor-grid");
   if (!grid) return;
 
-  // Unpack cards from any existing scroll track before rebuilding
-  unpackSensorTrack();
+  // Remove any existing scroll track
+  const existingTrack = grid.querySelector(".sensor-track");
+  if (existingTrack) existingTrack.remove();
+  grid.classList.remove("sensor-scrolling");
+  grid.style.removeProperty("--sensor-scroll-duration");
+  grid.style.removeProperty("--sensor-one-set-width");
 
   const allCards = Array.from(grid.querySelectorAll(".sensor-card"));
   const count = allCards.length;
