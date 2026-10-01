@@ -8,7 +8,7 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "thermoworks-sdk": "^1.0.0",
+    "thermoworks-sdk": "^0.8.0",
     "firebase-admin": "^12.0.0"
   }
 }

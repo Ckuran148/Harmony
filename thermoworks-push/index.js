@@ -1,4 +1,4 @@
-import { ThermoWorks } from "thermoworks-sdk";
+import { ThermoworksCloud } from "thermoworks-sdk";
 import admin from "firebase-admin";
 import { readFileSync } from "fs";
 
@@ -21,25 +21,28 @@ admin.initializeApp({
 const firestore = admin.firestore();
 
 // --- ThermoWorks Client ---
-const tw = new ThermoWorks();
+const client = new ThermoworksCloud({
+  email: TW_EMAIL,
+  password: TW_PASSWORD,
+  tokenCachePath: true,
+});
 
 let running = true;
 
 async function pushData() {
   try {
-    console.log(`[${new Date().toISOString()}] Authenticating with ThermoWorks...`);
-    await tw.authenticate(TW_EMAIL, TW_PASSWORD);
+    console.log(`[${new Date().toISOString()}] Fetching ThermoWorks devices...`);
 
-    const devices = await tw.getDevices();
+    const devices = await client.getDevices();
     console.log(`[${new Date().toISOString()}] Found ${devices.length} device(s)`);
 
     for (const device of devices) {
       const serial = device.serial;
-      console.log(`  Processing device: ${serial} (${device.name || "unnamed"})`);
+      console.log(`  Processing device: ${serial} (${device.label || "unnamed"})`);
 
       let channels;
       try {
-        channels = await tw.getAllDeviceChannels(serial);
+        channels = await client.getAllDeviceChannels(serial);
       } catch (err) {
         console.error(`  Error fetching channels for ${serial}:`, err.message);
         continue;
@@ -48,9 +51,9 @@ async function pushData() {
       // Build channels map keyed by channel number string
       const channelsMap = {};
       for (const ch of channels) {
-        channelsMap[String(ch.channel)] = {
-          label: ch.name || `Channel ${ch.channel}`,
-          value: ch.currentReading ?? null,
+        channelsMap[String(ch.number)] = {
+          label: ch.label || `Channel ${ch.number}`,
+          value: ch.value ?? null,
           units: ch.units || "F",
           alarmHigh: ch.alarmHigh ?? null,
           alarmLow: ch.alarmLow ?? null,
@@ -58,11 +61,11 @@ async function pushData() {
       }
 
       const docData = {
-        deviceLabel: device.name || serial,
+        deviceLabel: device.label || serial,
         status: device.status || "UNKNOWN",
         battery: device.battery ?? 0,
         batteryState: device.batteryState || "unknown",
-        wifiStrength: device.wifiStrength ?? null,
+        wifiStrength: device.wifi_stength ?? null,
         lastSeen: device.lastSeen || null,
         lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
         channels: channelsMap,
@@ -100,6 +103,7 @@ async function main() {
     console.log("\nShutting down gracefully...");
     running = false;
     clearInterval(interval);
+    client.close();
     process.exit(0);
   };
 
