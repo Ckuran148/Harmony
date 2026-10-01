@@ -1522,6 +1522,12 @@
                     </div>
                     <div class="col-12 col-md-4">${urlField}</div>
                     ${durationField}
+                    <div class="col-auto">
+                        <label class="form-check form-check-inline mb-0" title="Enable sound for this item (requires Chromium --autoplay-policy=no-user-gesture-required)">
+                            <input type="checkbox" class="form-check-input media-sound" ${item.sound ? 'checked' : ''}>
+                            <span class="form-check-label small">Sound</span>
+                        </label>
+                    </div>
                     <div class="col-auto ms-auto">
                         <button class="btn btn-sm btn-danger remove-media-btn" type="button">✕</button>
                     </div>
@@ -1626,6 +1632,7 @@
                     type,
                     name: row.querySelector('.media-name').value.trim(),
                     url: row.querySelector('.media-url').value.trim(),
+                    sound: row.querySelector('.media-sound')?.checked || false,
                     durationSeconds: (() => {
                         const minEl = row.querySelector('.media-duration-min');
                         const secEl = row.querySelector('.media-duration-sec');

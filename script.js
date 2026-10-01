@@ -81,6 +81,47 @@ const FOOD_SAFETY_REFRESH_RATE = 6 * 60 * 60 * 1000;
 // index.html is on large TVs — scroll only if > 12 cards; dash-min scrolls at > 7
 const SENSOR_SCROLL_THRESHOLD  = window.location.pathname.toLowerCase().includes('dash-min') ? 7 : 12;
 
+// --- EXPIRATION ALARM SOUNDS ---
+// Generate alarm tones as in-memory WAV blobs played via <audio>.play().
+// This avoids AudioContext autoplay restrictions — Android WebView and many
+// kiosk browsers are more lenient with <audio> element playback.
+
+function _buildAlarmWav(freq, onMs, offMs, count) {
+  const sr = 8000;
+  const totalMs = count * onMs + (count - 1) * offMs;
+  const n = Math.ceil(sr * totalMs / 1000);
+  const buf = new ArrayBuffer(44 + n);
+  const d = new DataView(buf);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) d.setUint8(o + i, s.charCodeAt(i)); };
+  w(0,'RIFF'); d.setUint32(4, 36 + n, true);
+  w(8,'WAVE'); w(12,'fmt ');
+  d.setUint32(16, 16, true); d.setUint16(20, 1, true); d.setUint16(22, 1, true);
+  d.setUint32(24, sr, true); d.setUint32(28, sr, true);
+  d.setUint16(32, 1, true); d.setUint16(34, 8, true);
+  w(36,'data'); d.setUint32(40, n, true);
+  const onN = Math.ceil(sr * onMs / 1000);
+  const cycleN = onN + Math.ceil(sr * offMs / 1000);
+  for (let i = 0; i < n; i++) {
+    const inBeep = (i % cycleN) < onN && Math.floor(i / cycleN) < count;
+    d.setUint8(44 + i, inBeep ? (Math.sin(2 * Math.PI * freq * i / sr) >= 0 ? 200 : 56) : 128);
+  }
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
+
+// Pre-generate alarm blob URLs at load time
+const _chickenAlarmUrl = _buildAlarmWav(800, 500, 300, 3); // 3 high beeps
+const _chiliAlarmUrl   = _buildAlarmWav(400, 1000, 500, 2); // 2 low pulses
+
+function playChickenAlarm() {
+  new Audio(_chickenAlarmUrl).play().catch(e => console.warn('[Alarm] chicken play blocked:', e));
+}
+function playChiliAlarm() {
+  new Audio(_chiliAlarmUrl).play().catch(e => console.warn('[Alarm] chili play blocked:', e));
+}
+// Expose alarm functions globally for console testing
+window.playChickenAlarm = playChickenAlarm;
+window.playChiliAlarm = playChiliAlarm;
+
 const CHILI_LABEL_QUERY = `
   query LabelReports($filter: LabelReportsFilterInput!, $mode: ModeInput!) {
     labelReports(filter: $filter, mode: $mode) {
@@ -810,6 +851,7 @@ function updateChiliCountdowns() {
 
     if (mode === 'cooking') {
       if (rem <= 0) {
+        if (!el.dataset.alarmed) { playChiliAlarm(); el.dataset.alarmed = '1'; }
         el.textContent = 'READY';
         el.classList.add('chili-overdue-text');
         if (batch) { batch.className = 'chili-batch chili-ready'; const lbl = batch.querySelector('.chili-state-label'); if (lbl) lbl.textContent = '⚠️ READY'; }
@@ -818,6 +860,7 @@ function updateChiliCountdowns() {
       }
     } else {
       if (rem <= 0) {
+        if (!el.dataset.alarmed) { playChiliAlarm(); el.dataset.alarmed = '1'; }
         el.textContent = 'EXPIRED';
         el.classList.add('chili-overdue-text');
         if (batch) batch.className = 'chili-batch chili-expired';
@@ -920,6 +963,7 @@ function updateChickenCountdowns() {
     const fill = card?.querySelector('.chicken-card-bar-fill');
 
     if (rem <= 0) {
+      if (!el.dataset.alarmed) { playChickenAlarm(); el.dataset.alarmed = '1'; }
       el.textContent = 'EXPIRED';
       if (card) card.className = 'chicken-card chicken-expired';
       if (fill) fill.style.width = '100%';
@@ -1222,12 +1266,13 @@ function detectMediaType(url) {
   return 'iframe';
 }
 
-function buildYouTubeEmbed(url) {
+function buildYouTubeEmbed(url, sound = false) {
   const match = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
   const id = match ? match[1] : null;
   if (!id) return url;
   const origin = encodeURIComponent(window.location.origin);
-  return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&rel=0&playsinline=1&enablejsapi=1&origin=${origin}`;
+  const mute = sound ? '0' : '1';
+  return `https://www.youtube.com/embed/${id}?autoplay=1&mute=${mute}&rel=0&playsinline=1&enablejsapi=1&origin=${origin}`;
 }
 
 function isItemActive(item) {
@@ -1268,6 +1313,7 @@ function hideInfoCards() {
 function playVideo(item, videoEl) {
   return new Promise(resolve => {
     videoEl.style.display = 'block';
+    videoEl.muted = !item.sound;
     videoEl.src = item.url;
     videoEl.play().catch(() => {});
     videoEl.onended = () => { videoEl.onended = null; resolve(); };
@@ -1277,7 +1323,7 @@ function playVideo(item, videoEl) {
 function playYouTube(item, iframeEl) {
   return new Promise(resolve => {
     iframeEl.style.display = 'block';
-    iframeEl.src = buildYouTubeEmbed(item.url);
+    iframeEl.src = buildYouTubeEmbed(item.url, item.sound);
     let done = false;
     const finish = (reason) => {
       if (done) return;
@@ -1300,12 +1346,12 @@ function playYouTube(item, iframeEl) {
   });
 }
 
-function buildIframeUrl(url) {
+function buildIframeUrl(url, sound = false) {
   try {
     const u = new URL(url);
     if (u.hostname.includes('brightcove.net')) {
       u.searchParams.set('autoplay', 'true');
-      u.searchParams.set('muted', 'true');
+      u.searchParams.set('muted', sound ? 'false' : 'true');
       return u.toString();
     }
   } catch (_) {}
@@ -1315,7 +1361,7 @@ function buildIframeUrl(url) {
 function playIframe(item, iframeEl) {
   return new Promise(resolve => {
     iframeEl.style.display = 'block';
-    iframeEl.src = buildIframeUrl(item.url);
+    iframeEl.src = buildIframeUrl(item.url, item.sound);
     let done = false;
     const finish = (reason) => {
       if (done) return;
