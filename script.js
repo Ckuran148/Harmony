@@ -315,7 +315,11 @@ async function fetchData() {
               } else {
                 delete twDevicesData[dev.serial];
               }
+              // Safe re-render: remove scroll track first so cards are
+              // back as direct children, then swap TW cards, then rebuild scroll
+              unpackSensorTrack();
               renderThermoworksCards();
+              updateSensorScroll();
             });
             twUnsubscribes.push(unsub);
           }
@@ -468,6 +472,9 @@ async function fetchSensors(locationId) {
     scenarioEventsFilter: SCENARIO_FILTER,
   };
 
+  // Always reset the grid for a clean rebuild
+  resetSensorGrid();
+
   try {
     const res = await fetch(JOLT_ENDPOINT, {
       method: "POST",
@@ -477,24 +484,20 @@ async function fetchSensors(locationId) {
     const json = await res.json();
     const sensors = json.data?.sensorDevices || [];
 
-    grid.innerHTML = "";
-    grid.classList.remove("sensor-scrolling");
-    grid.style.removeProperty("--sensor-scroll-duration");
-
     if (sensors.length > 0) {
       sensors.forEach((s) => renderSensorCard(s, grid));
     }
-
-    // Append TW cards and apply scroll logic for all combined cards
-    renderThermoworksCards();
-    updateSensorScroll();
-
-    // Show fallback only if no cards at all (no Jolt + no TW)
-    if (grid.querySelectorAll(".sensor-card").length === 0 && !grid.querySelector(".sensor-track")) {
-      grid.innerHTML = "<div style='color:#555; padding:10px;'>No Sensors Found</div>";
-    }
   } catch (err) {
     console.error("Sensor Error", err);
+  }
+
+  // Always render TW cards and scroll after Jolt (even on error)
+  renderThermoworksCards();
+  updateSensorScroll();
+
+  // Show fallback only if no cards at all (no Jolt + no TW)
+  if (grid.querySelectorAll(".sensor-card").length === 0 && !grid.querySelector(".sensor-track")) {
+    grid.innerHTML = "<div class='sensor-fallback' style='color:#555; padding:10px;'>No Sensors Found</div>";
   }
 }
 
@@ -550,12 +553,23 @@ function renderSensorCard(sensor, grid) {
 
 // --- ThermoWorks Card Rendering ---
 
+function resetSensorGrid() {
+  const grid = document.getElementById("sensor-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
+  grid.classList.remove("sensor-scrolling");
+  grid.style.removeProperty("--sensor-scroll-duration");
+  grid.style.removeProperty("--sensor-one-set-width");
+}
+
 function renderThermoworksCards() {
   const grid = document.getElementById("sensor-grid");
   if (!grid) return;
 
-  // Remove existing TW cards (for re-render on snapshot update)
+  // Remove existing TW cards and fallback message (for clean re-render)
   grid.querySelectorAll(".thermoworks-card").forEach((el) => el.remove());
+  const fallback = grid.querySelector(".sensor-fallback");
+  if (fallback) fallback.remove();
 
   if (!twEnabled || Object.keys(twDevicesData).length === 0) return;
 
@@ -590,7 +604,7 @@ function renderThermoworksCards() {
       const card = document.createElement("div");
       card.className = "sensor-card thermoworks-card";
       card.innerHTML = `
-        <h3>${ch.label || device.deviceLabel || serial}</h3>
+        <h3>${ch.label || device.deviceLabel || devCfg.serial}</h3>
         <div class="reading ${tempClass}">${valueStr}</div>
         ${offline ? '<div class="last-reading-indicator">Last Reading</div>' : ""}
         <div class="signal-row">
@@ -601,21 +615,37 @@ function renderThermoworksCards() {
       grid.appendChild(card);
     }
   }
+}
 
-  updateSensorScroll();
+function unpackSensorTrack() {
+  const grid = document.getElementById("sensor-grid");
+  if (!grid) return;
+  const track = grid.querySelector(".sensor-track");
+  if (!track) return;
+
+  // Move original cards (one set) back to grid, discard clones
+  const seen = new Set();
+  Array.from(track.querySelectorAll(".sensor-card")).forEach((card) => {
+    // Cards were cloned for seamless scroll — keep only the first occurrence
+    // Use the card's h3 text + class as a dedup key
+    const key = card.className + "|" + (card.querySelector("h3")?.textContent || "");
+    if (!seen.has(key)) {
+      seen.add(key);
+      grid.appendChild(card);
+    }
+  });
+  track.remove();
+  grid.classList.remove("sensor-scrolling");
+  grid.style.removeProperty("--sensor-scroll-duration");
+  grid.style.removeProperty("--sensor-one-set-width");
 }
 
 function updateSensorScroll() {
   const grid = document.getElementById("sensor-grid");
   if (!grid) return;
 
-  // Remove any existing scroll track (reset)
-  const existingTrack = grid.querySelector(".sensor-track");
-  if (existingTrack) existingTrack.remove();
-
-  grid.classList.remove("sensor-scrolling");
-  grid.style.removeProperty("--sensor-scroll-duration");
-  grid.style.removeProperty("--sensor-one-set-width");
+  // Unpack cards from any existing scroll track before rebuilding
+  unpackSensorTrack();
 
   const allCards = Array.from(grid.querySelectorAll(".sensor-card"));
   const count = allCards.length;
