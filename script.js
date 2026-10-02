@@ -81,6 +81,67 @@ const FOOD_SAFETY_REFRESH_RATE = 6 * 60 * 60 * 1000;
 // index.html is on large TVs — scroll only if > 12 cards; dash-min scrolls at > 7
 const SENSOR_SCROLL_THRESHOLD  = window.location.pathname.toLowerCase().includes('dash-min') ? 7 : 12;
 
+// --- SEASONAL THEME PRESETS ---
+const THEME_VARS = [
+  "--bg-body", "--bg-card", "--bg-sensor-row", "--bg-jolt-bottom",
+  "--bg-daypart", "--bg-inset", "--accent-primary", "--accent-jolt",
+  "--border-light", "--border-dark", "--border-medium",
+  "--text-primary", "--text-secondary", "--text-muted", "--text-dim",
+  "--text-on-inset", "--text-countdown", "--text-live", "--text-discontinued",
+  "--bg-site-indicator", "--alert-default", "--alert-warning", "--alert-info",
+];
+
+const THEMES = {
+  default: {},
+  "fresh-beef": {
+    "--bg-body": "#ff0000",
+    "--bg-card": "#fffb00",
+    "--bg-sensor-row": "#fffb00",
+    "--bg-jolt-bottom": "#fffb00",
+    "--bg-daypart": "#5a4520",
+    "--bg-inset": "#6b0505",
+    "--accent-primary": "#d4a020",
+    "--accent-jolt": "#e2203a",
+    "--border-light": "#7a6530",
+    "--border-dark": "#5a4520",
+    "--border-medium": "#6a5528",
+    "--text-primary": "#000000",
+    "--text-secondary": "#000000",
+    "--text-muted": "#000000",
+    "--text-dim": "#000000",
+    "--text-countdown": "#e2203a",
+    "--alert-default": "#fffb00",
+    "--text-countdown": "#e2203a",
+    "--text-live": "#000000",
+    "--text-discontinued": "#ff4444",
+    "--alert-default": "#fffb00",
+    "--text-on-inset": "#cccccc",
+    "--alert-info" : "#fffb00",
+    "--alert-warning":"#fffb00",
+     "--bg-site-indicator":"#cccccc",
+  },
+};
+
+function applyTheme(themeConfig) {
+  const root = document.documentElement;
+  // Reset all theme variables to CSS :root defaults
+  for (const varName of THEME_VARS) {
+    root.style.removeProperty(varName);
+  }
+
+  const presetName = themeConfig?.preset || "default";
+  const preset = THEMES[presetName] || {};
+  const overrides = themeConfig?.overrides || {};
+
+  const merged = { ...preset, ...overrides };
+  for (const [prop, value] of Object.entries(merged)) {
+    root.style.setProperty(prop, value);
+  }
+}
+
+// Expose for console testing (e.g. applyTheme({ preset: "fresh-beef" }))
+window.applyTheme = applyTheme;
+
 // --- EXPIRATION ALARM SOUNDS ---
 // Generate alarm tones as in-memory WAV blobs played via <audio>.play().
 // This avoids AudioContext autoplay restrictions — Android WebView and many
@@ -211,17 +272,17 @@ async function fetchData() {
     const firstAlert = activeAlerts[0];
     alertBox.innerText = firstAlert.text;
     if (firstAlert.type === "warning") {
-      alertBox.style.backgroundColor = "#b00000";
-      alertBox.style.color = "#ffffff";
+      alertBox.style.backgroundColor = "var(--alert-warning)";
+      alertBox.style.color = "var(--text-primary)";
     } else if (firstAlert.type === "info") {
-      alertBox.style.backgroundColor = "#005cc8";
-      alertBox.style.color = "#ffffff";
+      alertBox.style.backgroundColor = "var(--alert-info)";
+      alertBox.style.color = "var(--text-primary)";
     } else if (firstAlert.type === "custom") {
-      alertBox.style.backgroundColor = firstAlert.bgColor || "#028a0f";
-      alertBox.style.color = firstAlert.textColor || "#ffffff";
+      alertBox.style.backgroundColor = firstAlert.bgColor || "var(--alert-default)";
+      alertBox.style.color = firstAlert.textColor || "var(--text-primary)";
     } else {
-      alertBox.style.backgroundColor = "#028a0f";
-      alertBox.style.color = "#ffffff";
+      alertBox.style.backgroundColor = "var(--alert-default)";
+      alertBox.style.color = "var(--text-primary)";
     }
     alertBox.style.opacity = 1;
     currentAlertIndex = 0; // Reset index on data fetch
@@ -260,6 +321,10 @@ async function fetchData() {
       ],
       joltLocationId: storeData.joltLocationId,
     };
+
+    // Apply seasonal theme (cascades: store > district > market > company)
+    const themeConfig = storeData.theme || districtData.theme || marketData.theme || generalData.theme || null;
+    applyTheme(themeConfig);
 
     if (!mediaRotationInitialized) {
       initMediaRotation(marketName, districtName);
@@ -371,7 +436,7 @@ async function fetchChecklists(locationId) {
 
     if (incomplete.length === 0) {
       listCurrent.innerHTML =
-        '<li style="color: #028a0f;">✅ All Caught Up!</li>';
+        '<li style="color: var(--alert-default);">✅ All Caught Up!</li>';
       return;
     }
 
@@ -402,11 +467,11 @@ async function fetchChecklists(locationId) {
 
     if (currentItems.length > 0)
       currentItems.forEach((obj) => renderJoltItem(obj, listCurrent));
-    else listCurrent.innerHTML = '<li style="color: #028a0f;">✅ Complete</li>';
+    else listCurrent.innerHTML = '<li style="color: var(--alert-default);">✅ Complete</li>';
 
     if (upcomingItems.length > 0)
       upcomingItems.forEach((obj) => renderJoltItem(obj, listUpcoming));
-    else listUpcoming.innerHTML = '<li style="color: #555;">None soon</li>';
+    else listUpcoming.innerHTML = '<li style="color: var(--text-muted);">None soon</li>';
 
     setTimeout(() => {
       startJoltScroll(scrollCurrent, listCurrent, "current");
@@ -494,7 +559,7 @@ async function fetchSensors(locationId) {
 
   // Show fallback only if no cards at all (no Jolt + no TW)
   if (grid.querySelectorAll(".sensor-card").length === 0 && !grid.querySelector(".sensor-track")) {
-    grid.innerHTML = "<div class='sensor-fallback' style='color:#555; padding:10px;'>No Sensors Found</div>";
+    grid.innerHTML = "<div class='sensor-fallback' style='color:var(--text-muted); padding:10px;'>No Sensors Found</div>";
   }
 }
 
@@ -542,7 +607,7 @@ function renderSensorCard(sensor, grid) {
         ${offline ? '<div class="last-reading-indicator">Last Reading</div>' : ""}
         <div class="signal-row">
             ${batHtml}
-            <span class="sensor-status-text" style="color: #888;">${offline ? "No Sig" : "On Line"}</span>
+            <span class="sensor-status-text" style="color: var(--text-muted);">${offline ? "No Sig" : "On Line"}</span>
         </div>
     `;
   grid.appendChild(card);
@@ -606,7 +671,7 @@ function renderThermoworksCards() {
         ${offline ? '<div class="last-reading-indicator">Last Reading</div>' : ""}
         <div class="signal-row">
             <span class="tw-badge">TW</span>
-            <span class="sensor-status-text" style="color: #888;">${offline ? "Offline" : "On Line"}</span>
+            <span class="sensor-status-text" style="color: var(--text-muted);">${offline ? "Offline" : "On Line"}</span>
         </div>
       `;
       grid.appendChild(card);
@@ -1146,17 +1211,17 @@ function rotateAlert() {
   setTimeout(() => {
     alertBox.innerText = alert.text;
     if (alert.type === "warning") {
-      alertBox.style.backgroundColor = "#b00000";
-      alertBox.style.color = "#ffffff";
+      alertBox.style.backgroundColor = "var(--alert-warning)";
+      alertBox.style.color = "var(--text-primary)";
     } else if (alert.type === "info") {
-      alertBox.style.backgroundColor = "#005cc8";
-      alertBox.style.color = "#ffffff";
+      alertBox.style.backgroundColor = "var(--alert-info)";
+      alertBox.style.color = "var(--text-primary)";
     } else if (alert.type === "custom") {
-      alertBox.style.backgroundColor = alert.bgColor || "#028a0f";
-      alertBox.style.color = alert.textColor || "#ffffff";
+      alertBox.style.backgroundColor = alert.bgColor || "var(--alert-default)";
+      alertBox.style.color = alert.textColor || "var(--text-primary)";
     } else {
-      alertBox.style.backgroundColor = "#028a0f";
-      alertBox.style.color = "#ffffff";
+      alertBox.style.backgroundColor = "var(--alert-default)";
+      alertBox.style.color = "var(--text-primary)";
     }
     alertBox.style.opacity = 1;
   }, 200);
@@ -1166,8 +1231,8 @@ function updateDaypart() {
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   let text = "PREP / OFF HOURS";
-  let bgColor = "#333";
-  let textColor = "#fff";
+  let bgColor = "var(--bg-daypart)";
+  let textColor = "var(--text-primary)";
   for (let i = 0; i < activeSchedule.length; i++) {
     const phase = activeSchedule[i];
     const startMin = timeToMinutes(phase.startTime);
@@ -1332,10 +1397,10 @@ function startLTOCountdown(element, targetDate, type) {
     if (distance < 0) {
       if (type === "disengagement") {
         element.innerText = "DISCONTINUED";
-        element.style.color = "#ff4444";
+        element.style.color = "var(--text-discontinued)";
       } else {
         element.innerText = "LIVE!";
-        element.style.color = "#00ff00";
+        element.style.color = "var(--text-live)";
       }
       element.style.fontWeight = "900";
       element.style.fontSize = "1.2rem";

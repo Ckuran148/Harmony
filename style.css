@@ -1,7 +1,34 @@
+/* --- THEME VARIABLES --- */
+:root {
+  --bg-body: #121212;
+  --bg-card: #252525;
+  --bg-sensor-row: #1e1e1e;
+  --bg-jolt-bottom: #2a2a2a;
+  --bg-daypart: #333;
+  --bg-inset: #181818;
+  --accent-primary: #0097a7;
+  --accent-jolt: #0088ff;
+  --border-light: #555;
+  --border-dark: #333;
+  --border-medium: #444;
+  --text-primary: #ffffff;
+  --text-secondary: #ddd;
+  --text-muted: #aaa;
+  --text-dim: #555;
+  --text-on-inset: #ccc;
+  --text-countdown: #ffcc00;
+  --text-live: #00ff00;
+  --text-discontinued: #ff4444;
+  --bg-site-indicator: rgba(0, 0, 0, 0.6);
+  --alert-default: #028a0f;
+  --alert-warning: #b00000;
+  --alert-info: #005cc8;
+}
+
 /* --- VISUAL STYLES --- */
 body {
-    background-color: #121212; 
-    color: white;
+    background-color: var(--bg-body);
+    color: var(--text-primary);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     height: 100vh;
@@ -21,15 +48,15 @@ body {
     top: 20px;
     right: 20px;
     font-size: 1.5rem; 
-    color: #ffffff;    
+    color: var(--text-primary);
     font-weight: 900;
     z-index: 1000;
     text-transform: uppercase;
     letter-spacing: 1px;
-    background-color: rgba(0, 0, 0, 0.6); 
+    background-color: var(--bg-site-indicator);
     padding: 5px 15px;
     border-radius: 8px;
-    border: 1px solid #555;
+    border: 1px solid var(--border-light);
 }
 
 /* FULL SCREEN CLOSED OVERLAY */
@@ -53,7 +80,7 @@ body {
 
 /* 1. ALERT BANNER */
 #alert-section {
-    background-color: #028a0f; 
+    background-color: var(--alert-default);
     border-radius: 10px;
     display: flex;
     align-items: center;
@@ -68,15 +95,15 @@ body {
 
 /* 2. DAYPART BANNER */
 #daypart-section {
-    background-color: #333;
-    border: 2px solid #555;
+    background-color: var(--bg-daypart);
+    border: 2px solid var(--border-light);
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2rem;
     font-weight: bold;
-    color: #eee;
+    color: var(--text-secondary);
 }
 
 /* 3. CONTENT COLUMNS */
@@ -89,10 +116,10 @@ body {
 }
 
 .card {
-    background-color: #252525;
+    background-color: var(--bg-card);
     border-radius: 10px;
     padding: 20px;
-    border-top: 6px solid #0097a7; 
+    border-top: 6px solid var(--accent-primary);
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     display: flex;
     flex-direction: column;
@@ -102,25 +129,25 @@ body {
 
 h2 {
     margin-top: 0;
-    border-bottom: 1px solid #555;
+    border-bottom: 1px solid var(--border-light);
     padding-bottom: 15px;
     font-size: 1.8rem;
-    color: #ddd;
+    color: var(--text-secondary);
     z-index: 10;
-    background-color: #252525; 
+    background-color: var(--bg-card);
 }
 
 /* SCROLLABLE LIST CONTAINER */
 .list-container { flex-grow: 1; overflow: hidden; position: relative; }
 ul { list-style-type: none; padding: 0; margin: 0; }
-li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 10px; border-bottom: 1px solid #333; }
+li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 10px; border-bottom: 1px solid var(--border-dark); }
 
 /* LTO Styling */
 .lto-item {
     display: flex;
     flex-direction: column;
     margin-bottom: 15px;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border-dark);
     padding-bottom: 10px;
 }
 
@@ -146,7 +173,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     height: 45px;
     object-fit: cover;
     border-radius: 8px;
-    border: 1px solid #555;
+    border: 1px solid var(--border-light);
 }
 
 .lto-text {
@@ -163,26 +190,26 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     padding-top: 3px;
     font-family: monospace;
     font-size: 0.8rem;
-    color: #ffcc00;
+    color: var(--text-countdown);
     line-height: 1.2;
 }
 
 /* JOLT CHECKLIST STYLES */
-.jolt-split-card { display: flex; flex-direction: column; padding: 0; border-top: 6px solid #0088ff; }
+.jolt-split-card { display: flex; flex-direction: column; padding: 0; border-top: 6px solid var(--accent-jolt); }
 .jolt-section { display: flex; flex-direction: column; overflow: hidden; padding: 15px 20px; position: relative; }
-.jolt-top { flex: 6; border-bottom: 2px solid #444; }
-.jolt-bottom { flex: 4; background-color: #2a2a2a; }
-.jolt-header-small { font-size: 1.4rem; font-weight: bold; color: #aaa; margin-bottom: 10px; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 5px; }
-.jolt-item { color: #ffcccc; }
-.jolt-important { color: #fff !important; background-color: rgba(255, 140, 0, 0.15); border-left: 5px solid #ff8c00; padding-left: 10px; font-weight: bold; }
+.jolt-top { flex: 6; border-bottom: 2px solid var(--border-medium); }
+.jolt-bottom { flex: 4; background-color: var(--bg-jolt-bottom); }
+.jolt-header-small { font-size: 1.4rem; font-weight: bold; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; border-bottom: 1px solid var(--border-medium); padding-bottom: 5px; }
+.jolt-item { color: var(--text-secondary); }
+.jolt-important { color: var(--text-primary) !important; background-color: rgba(255, 140, 0, 0.15); border-left: 5px solid #ff8c00; padding-left: 10px; font-weight: bold; }
 .jolt-late { color: #ff5555 !important; font-weight: bold; border-left: 5px solid #ff0000; padding-left: 10px; background-color: rgba(255, 0, 0, 0.1); }
 
 /* --- SENSOR ROW (UPDATED FOR SHORTER HEIGHT) --- */
 #sensor-row-container {
     overflow: hidden;
-    background-color: #1e1e1e;
+    background-color: var(--bg-sensor-row);
     border-radius: 10px;
-    border: 1px solid #333;
+    border: 1px solid var(--border-dark);
     display: flex;
     align-items: stretch;
     padding: 5px;
@@ -244,11 +271,11 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 }
 
 .sensor-card {
-    background: #252525;
+    background: var(--bg-card);
     /* REDUCED PADDING: Helps fit content in small height */
     padding: 4px 8px;
     border-radius: 8px;
-    border: 1px solid #444;
+    border: 1px solid var(--border-medium);
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -260,10 +287,10 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 }
 
 /* UPDATED: Use VH (Viewport Height) so text scales with the row height */
-.sensor-card h3 { 
-    margin: 0; 
-    font-weight: 600; 
-    color: #aaa; 
+.sensor-card h3 {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -274,7 +301,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 
 .reading {
     font-weight: 700;
-    color: #fff;
+    color: var(--text-primary);
     margin-top: auto;
     text-align: center;
     line-height: 1.1;
@@ -282,11 +309,11 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     font-size: clamp(1.2rem, 5vh, 2.5rem);
 }
 
-.signal-row { 
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between; 
-    border-top: 1px solid #444;
+.signal-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--border-medium);
     padding-top: 2px;
     /* Max height is 2% of screen height */
     font-size: clamp(0.6rem, 2vh, 0.9rem); 
@@ -349,7 +376,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     align-items: center;
     gap: 12px;
     padding: 10px 20px 8px;
-    border-bottom: 2px solid #333;
+    border-bottom: 2px solid var(--border-dark);
     flex-shrink: 0;
 }
 .fs-period-label {
@@ -357,7 +384,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    color: #aaa;
+    color: var(--text-on-inset);
     margin-bottom: 4px;
     flex-shrink: 0;
 }
@@ -369,14 +396,14 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     overflow: hidden;
 }
 .fs-section-top {
-    border-bottom: 2px solid #333;
+    border-bottom: 2px solid var(--border-dark);
 }
 .fs-section-bottom {
-    background-color: #222;
-    border-bottom: 2px solid #333;
+    background-color: var(--bg-jolt-bottom);
+    border-bottom: 2px solid var(--border-dark);
 }
 .fs-section-yesterday {
-    background-color: #1e1e1e;
+    background-color: var(--bg-jolt-bottom);
 }
 
 .fs-header {
@@ -384,7 +411,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     align-items: center;
     gap: 12px;
     padding-bottom: 16px;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border-dark);
     margin-bottom: 14px;
     flex-shrink: 0;
 }
@@ -392,14 +419,14 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .fs-title {
     font-size: clamp(1rem, 2.5vh, 1.4rem);
     font-weight: 800;
-    color: #ddd;
+    color: var(--text-secondary);
     line-height: 1.1;
 }
 .fs-subtitle {
     font-size: clamp(0.55rem, 1.2vh, 0.72rem);
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #bbb;
+    color: var(--text-on-inset);
     margin-top: 3px;
 }
 .fs-tiles {
@@ -413,14 +440,14 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    background: #181818;
+    background: var(--bg-inset);
     border-radius: 10px;
-    border: 1px solid #2a2a2a;
+    border: 1px solid var(--bg-jolt-bottom);
     position: relative;
     overflow: hidden;
     gap: 8px;
     padding: 8px 28px 8px 16px;
-    border-left: 5px solid #2a2a2a;
+    border-left: 5px solid var(--bg-jolt-bottom);
     container-type: inline-size;
 }
 .fs-tile.good { border-left-color: #00c853; }
@@ -430,7 +457,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .fs-value {
     font-size: clamp(1.4rem, 10cqw, 3rem);
     font-weight: 900;
-    color: #ccc;
+    color: var(--text-on-inset);
     line-height: 1;
     transition: color 0.4s;
 }
@@ -443,14 +470,14 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     text-transform: uppercase;
     letter-spacing: 1.5px;
     font-weight: 700;
-    color: #ccc;
+    color: var(--text-on-inset);
     padding-bottom: 0;
 }
 
 /* KPI COLUMN (Food Safety and future metrics) */
 .kpi-period {
     display: block;
-    color: #555;
+    color: var(--text-dim);
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.8px;
@@ -463,16 +490,16 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: #1e1e1e;
+    background-color: var(--bg-sensor-row);
     border-radius: 8px;
     margin-bottom: 12px;
-    border: 1px solid #333;
+    border: 1px solid var(--border-dark);
     min-height: 0;
 }
 .kpi-tile:last-child { margin-bottom: 0; }
 .kpi-label {
     font-size: clamp(0.65rem, 1.5vh, 0.85rem);
-    color: #666;
+    color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 1.5px;
     font-weight: 700;
@@ -480,7 +507,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .kpi-value {
     font-size: clamp(2rem, 6vh, 3.5rem);
     font-weight: 900;
-    color: #555;
+    color: var(--text-dim);
     line-height: 1.1;
 }
 .kpi-value.good { color: #00c853; }
@@ -495,7 +522,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     padding: 20px;
     display: flex;
     flex-direction: column;
-    background-color: #252525;
+    background-color: var(--bg-card);
     opacity: 1;
     transition: opacity 0.8s ease-in-out;
     overflow: hidden;
@@ -512,7 +539,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     align-items: center;
     gap: 12px;
     padding-bottom: 14px;
-    border-bottom: 2px solid #333;
+    border-bottom: 2px solid var(--border-dark);
     margin-bottom: 14px;
     flex-shrink: 0;
 }
@@ -520,18 +547,18 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .chili-title {
     font-size: clamp(1rem, 2.5vh, 1.4rem);
     font-weight: 800;
-    color: #fff;
+    color: var(--text-primary);
     line-height: 1.1;
 }
 .chili-subtitle {
     font-size: clamp(0.55rem, 1.2vh, 0.72rem);
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #ddd;
+    color: var(--text-secondary);
     margin-top: 3px;
 }
 .chili-empty {
-    color: #ddd;
+    color: var(--text-secondary);
     font-size: 1rem;
     text-align: center;
     margin-top: 20px;
@@ -540,8 +567,8 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     border-radius: 8px;
     padding: 12px 14px;
     margin-bottom: 10px;
-    background: #1e1e1e;
-    border: 1px solid #333;
+    background: var(--bg-sensor-row);
+    border: 1px solid var(--border-dark);
 }
 .chili-batch:last-child { margin-bottom: 0; }
 
@@ -549,14 +576,14 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .chili-ready      { border-left: 4px solid #ff9800; background: rgba(255,152,0,0.07); }
 .chili-online     { border-left: 4px solid #00c853; }
 .chili-near-expiry{ border-left: 4px solid #e6a800; }
-.chili-expired    { border-left: 4px solid #444; opacity: 0.55; }
+.chili-expired    { border-left: 4px solid var(--border-medium); opacity: 0.55; }
 
 .chili-state-label {
     font-size: clamp(0.6rem, 1.4vh, 0.78rem);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    color: #ddd;
+    color: var(--text-secondary);
     margin-bottom: 6px;
 }
 .chili-time-row {
@@ -567,14 +594,14 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 }
 .chili-time-label {
     font-size: clamp(0.6rem, 1.2vh, 0.72rem);
-    color: #ddd;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 .chili-time-value {
     font-size: clamp(1.1rem, 2.8vh, 1.6rem);
     font-weight: 700;
-    color: #fff;
+    color: var(--text-primary);
 }
 .chili-countdown {
     font-size: clamp(1.6rem, 4.5vh, 2.6rem);
@@ -586,7 +613,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 }
 .chili-cooking    .chili-countdown { color: #e6a800; }
 .chili-near-expiry .chili-countdown { color: #e6a800; }
-.chili-expired    .chili-countdown { color: #555; }
+.chili-expired    .chili-countdown { color: var(--text-dim); }
 .chili-overdue-text { color: #d9534f !important; }
 
 /* CHICKEN TRACKER PANEL */
@@ -595,7 +622,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     align-items: center;
     gap: 12px;
     padding-bottom: 14px;
-    border-bottom: 2px solid #333;
+    border-bottom: 2px solid var(--border-dark);
     margin-bottom: 14px;
     flex-shrink: 0;
 }
@@ -603,14 +630,14 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .chicken-title {
     font-size: clamp(1rem, 2.5vh, 1.4rem);
     font-weight: 800;
-    color: #fff;
+    color: var(--text-primary);
     line-height: 1.1;
 }
 .chicken-subtitle {
     font-size: clamp(0.55rem, 1.2vh, 0.72rem);
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #ddd;
+    color: var(--text-secondary);
     margin-top: 3px;
 }
 .chicken-count {
@@ -619,10 +646,10 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #ddd;
+    color: var(--text-secondary);
 }
 .chicken-empty {
-    color: #ddd;
+    color: var(--text-secondary);
     font-size: 1rem;
     text-align: center;
     margin-top: 20px;
@@ -640,8 +667,8 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .chicken-card {
     border-radius: 8px;
     padding: 10px 12px;
-    background: #1e1e1e;
-    border: 1px solid #2a2a2a;
+    background: var(--bg-sensor-row);
+    border: 1px solid var(--bg-jolt-bottom);
     border-left: 4px solid #00c853;
     display: flex;
     flex-direction: column;
@@ -651,18 +678,18 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .chicken-fresh    { border-left-color: #00c853; }
 .chicken-warn     { border-left-color: #e6a800; }
 .chicken-hot      { border-left-color: #d9534f; }
-.chicken-expired  { border-left-color: #444; opacity: 0.5; }
+.chicken-expired  { border-left-color: var(--border-medium); opacity: 0.5; }
 
 .chicken-card-label {
     font-size: clamp(0.55rem, 1.1vh, 0.68rem);
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #ddd;
+    color: var(--text-secondary);
     font-weight: 700;
 }
 .chicken-card-exp {
     font-size: clamp(0.62rem, 1.3vh, 0.78rem);
-    color: #eee;
+    color: var(--text-secondary);
 }
 .chicken-card-countdown {
     font-size: clamp(1.4rem, 3.5vh, 2.2rem);
@@ -675,11 +702,11 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .chicken-fresh   .chicken-card-countdown { color: #00c853; }
 .chicken-warn    .chicken-card-countdown { color: #e6a800; }
 .chicken-hot     .chicken-card-countdown { color: #d9534f; }
-.chicken-expired .chicken-card-countdown { color: #555; font-size: clamp(0.75rem, 1.8vh, 0.95rem); }
+.chicken-expired .chicken-card-countdown { color: var(--text-dim); font-size: clamp(0.75rem, 1.8vh, 0.95rem); }
 
 .chicken-card-bar {
     height: 4px;
-    background: #2a2a2a;
+    background: var(--bg-jolt-bottom);
     border-radius: 2px;
     overflow: hidden;
     margin-top: 2px;
@@ -692,7 +719,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 }
 .chicken-warn    .chicken-card-bar-fill { background-color: #e6a800; }
 .chicken-hot     .chicken-card-bar-fill { background-color: #d9534f; }
-.chicken-expired .chicken-card-bar-fill { background-color: #444; }
+.chicken-expired .chicken-card-bar-fill { background-color: var(--border-medium); }
 
 /* ThermoWorks sensor cards */
 .sensor-card.thermoworks-card {
@@ -701,7 +728,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
 .tw-badge {
     display: inline-block;
     background: #0d6efd;
-    color: #fff;
+    color: var(--text-primary);
     font-size: 0.55rem;
     font-weight: 700;
     padding: 1px 4px;
