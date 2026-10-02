@@ -87,12 +87,13 @@ const THEME_VARS = [
   "--bg-daypart", "--bg-inset", "--accent-primary", "--accent-jolt",
   "--border-light", "--border-dark", "--border-medium",
   "--text-primary", "--text-secondary", "--text-muted", "--text-dim",
-  "--text-on-inset", "--text-countdown", "--text-live", "--text-discontinued",
+  "--text-on-inset", "--text-fs-label", "--text-countdown", "--text-live", "--text-discontinued",
   "--bg-site-indicator", "--alert-default", "--alert-warning", "--alert-info",
 ];
 
 const THEMES = {
   default: {},
+  custom: {},
   "fresh-beef": {
     "--bg-body": "#ff0000",
     "--bg-card": "#fffb00",
@@ -100,6 +101,7 @@ const THEMES = {
     "--bg-jolt-bottom": "#fffb00",
     "--bg-daypart": "#5a4520",
     "--bg-inset": "#6b0505",
+    "--bg-site-indicator": "#cccccc",
     "--accent-primary": "#d4a020",
     "--accent-jolt": "#e2203a",
     "--border-light": "#7a6530",
@@ -109,16 +111,15 @@ const THEMES = {
     "--text-secondary": "#000000",
     "--text-muted": "#000000",
     "--text-dim": "#000000",
-    "--text-countdown": "#e2203a",
-    "--alert-default": "#fffb00",
+    "--text-on-inset": "#000000",
+    "--text-fs-label": "#cccccc",
     "--text-countdown": "#e2203a",
     "--text-live": "#000000",
     "--text-discontinued": "#ff4444",
     "--alert-default": "#fffb00",
-    "--text-on-inset": "#cccccc",
-    "--alert-info" : "#fffb00",
-    "--alert-warning":"#fffb00",
-     "--bg-site-indicator":"#cccccc",
+    "--alert-warning": "#fffb00",
+    "--alert-info": "#fffb00",
+    
   },
 };
 

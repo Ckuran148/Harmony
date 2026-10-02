@@ -273,37 +273,18 @@
                             <h4>Dashboard Theme</h4>
                             <small class="text-muted d-block mb-3">Apply a seasonal color theme. Inherits from company/market/district if not set here.</small>
                             <div class="card p-3 border-secondary" style="background:#1a1a1a">
-                                <div class="row g-3">
+                                <div class="row g-3 mb-3">
                                     <div class="col-md-4">
                                         <label class="form-label mb-1">Preset Theme</label>
                                         <select class="form-select" id="theme-preset">
                                             <option value="">Inherit (use parent level)</option>
                                             <option value="default">Default Dark</option>
                                             <option value="fresh-beef">Fresh Beef Promo</option>
+                                            <option value="custom">Custom</option>
                                         </select>
                                     </div>
                                 </div>
-                                <div id="theme-overrides" class="mt-3 d-none">
-                                    <small class="text-muted d-block mb-2">Optional: Override individual colors</small>
-                                    <div class="row g-2">
-                                        <div class="col-6 col-md-3">
-                                            <label class="form-label mb-1 small">Background</label>
-                                            <input type="color" class="form-control form-control-color w-100" id="theme-bg-body">
-                                        </div>
-                                        <div class="col-6 col-md-3">
-                                            <label class="form-label mb-1 small">Card Background</label>
-                                            <input type="color" class="form-control form-control-color w-100" id="theme-bg-card">
-                                        </div>
-                                        <div class="col-6 col-md-3">
-                                            <label class="form-label mb-1 small">Accent Color</label>
-                                            <input type="color" class="form-control form-control-color w-100" id="theme-accent">
-                                        </div>
-                                        <div class="col-6 col-md-3">
-                                            <label class="form-label mb-1 small">Border Color</label>
-                                            <input type="color" class="form-control form-control-color w-100" id="theme-border">
-                                        </div>
-                                    </div>
-                                </div>
+                                <div id="theme-overrides" class="d-none"></div>
                             </div>
                         </div>
 
@@ -1790,16 +1771,119 @@
         };
 
         // --- Theme helpers ---
-        const PORTAL_THEMES = {
-            default: {
-                "--bg-body": "#121212", "--bg-card": "#252525",
-                "--accent-primary": "#0097a7", "--border-light": "#555",
-            },
-            "fresh-beef": {
-                "--bg-body": "#3a2a0a", "--bg-card": "#4a3818",
-                "--accent-primary": "#d4a020", "--border-light": "#7a6530",
-            },
+        const THEME_VAR_GROUPS = [
+            { label: "Backgrounds", vars: [
+                { key: "--bg-body",          name: "Page Background" },
+                { key: "--bg-card",          name: "Card Background" },
+                { key: "--bg-sensor-row",    name: "Sensor Row" },
+                { key: "--bg-jolt-bottom",   name: "Jolt Bottom / Sections" },
+                { key: "--bg-daypart",       name: "Daypart Banner" },
+                { key: "--bg-inset",         name: "Inset Panels" },
+                { key: "--bg-site-indicator",name: "Store # Badge" },
+            ]},
+            { label: "Accents & Borders", vars: [
+                { key: "--accent-primary",   name: "Primary Accent" },
+                { key: "--accent-jolt",      name: "Jolt Accent" },
+                { key: "--border-light",     name: "Light Border" },
+                { key: "--border-dark",      name: "Dark Border" },
+                { key: "--border-medium",    name: "Medium Border" },
+            ]},
+            { label: "Text Colors", vars: [
+                { key: "--text-primary",     name: "Primary Text" },
+                { key: "--text-secondary",   name: "Secondary Text" },
+                { key: "--text-muted",       name: "Muted Text" },
+                { key: "--text-dim",         name: "Dim Text" },
+                { key: "--text-on-inset",    name: "Text on Insets" },
+                { key: "--text-fs-label",    name: "FS Labels (COMPLETION)" },
+                { key: "--text-countdown",   name: "Countdown Timer" },
+                { key: "--text-live",        name: "LIVE! Label" },
+                { key: "--text-discontinued",name: "Discontinued Label" },
+            ]},
+            { label: "Alert Banners", vars: [
+                { key: "--alert-default",    name: "Default Alert" },
+                { key: "--alert-warning",    name: "Warning Alert" },
+                { key: "--alert-info",       name: "Info Alert" },
+            ]},
+        ];
+
+        const THEME_DEFAULTS = {
+            "--bg-body": "#121212", "--bg-card": "#252525", "--bg-sensor-row": "#1e1e1e",
+            "--bg-jolt-bottom": "#2a2a2a", "--bg-daypart": "#333333", "--bg-inset": "#181818",
+            "--bg-site-indicator": "#000000", "--accent-primary": "#0097a7",
+            "--accent-jolt": "#0088ff", "--border-light": "#555555", "--border-dark": "#333333",
+            "--border-medium": "#444444", "--text-primary": "#ffffff", "--text-secondary": "#dddddd",
+            "--text-muted": "#aaaaaa", "--text-dim": "#555555", "--text-on-inset": "#cccccc",
+            "--text-fs-label": "#cccccc", "--text-countdown": "#ffcc00", "--text-live": "#00ff00", "--text-discontinued": "#ff4444",
+            "--alert-default": "#028a0f", "--alert-warning": "#b00000", "--alert-info": "#005cc8",
         };
+
+        const PORTAL_THEMES = {
+            default: { ...THEME_DEFAULTS },
+            "fresh-beef": {
+                "--bg-body": "#ff0000", "--bg-card": "#fffb00", "--bg-sensor-row": "#fffb00",
+                "--bg-jolt-bottom": "#fffb00", "--bg-daypart": "#5a4520", "--bg-inset": "#6b0505",
+                "--bg-site-indicator": "#cccccc", "--accent-primary": "#d4a020",
+                "--accent-jolt": "#e2203a", "--border-light": "#7a6530", "--border-dark": "#5a4520",
+                "--border-medium": "#6a5528", "--text-primary": "#000000", "--text-secondary": "#000000",
+                "--text-muted": "#000000", "--text-dim": "#000000", "--text-on-inset": "#cccccc",
+                "--text-fs-label": "#cccccc", "--text-countdown": "#e2203a", "--text-live": "#000000", "--text-discontinued": "#ff4444",
+                "--alert-default": "#fffb00", "--alert-warning": "#fffb00", "--alert-info": "#fffb00",
+            },
+            custom: { ...THEME_DEFAULTS },
+        };
+
+        function normalizeToHex6(val) {
+            if (!val) return '#000000';
+            val = val.trim();
+            // Handle rgba/rgb by converting to hex
+            if (val.startsWith('rgba') || val.startsWith('rgb')) {
+                const m = val.match(/[\d.]+/g);
+                if (m) {
+                    const r = Math.round(parseFloat(m[0]));
+                    const g = Math.round(parseFloat(m[1]));
+                    const b = Math.round(parseFloat(m[2]));
+                    return '#' + [r,g,b].map(c => c.toString(16).padStart(2,'0')).join('');
+                }
+            }
+            // Handle 3-char hex
+            if (val.length === 4 && val[0] === '#') {
+                return '#' + val[1]+val[1] + val[2]+val[2] + val[3]+val[3];
+            }
+            // Pad 6-char hex
+            if (val.length === 7) return val;
+            return val;
+        }
+
+        function buildThemeOverridesUI(colors) {
+            const container = document.getElementById('theme-overrides');
+            container.innerHTML = '';
+            for (const group of THEME_VAR_GROUPS) {
+                const heading = document.createElement('div');
+                heading.className = 'text-muted small fw-bold mt-2 mb-1';
+                heading.textContent = group.label;
+                container.appendChild(heading);
+                const row = document.createElement('div');
+                row.className = 'row g-2 mb-2';
+                for (const v of group.vars) {
+                    const col = document.createElement('div');
+                    col.className = 'col-6 col-md-3 col-lg-2';
+                    const label = document.createElement('label');
+                    label.className = 'form-label mb-0 small';
+                    label.textContent = v.name;
+                    label.setAttribute('for', 'tvar' + v.key);
+                    const input = document.createElement('input');
+                    input.type = 'color';
+                    input.className = 'form-control form-control-color w-100';
+                    input.id = 'tvar' + v.key;
+                    input.dataset.varkey = v.key;
+                    input.value = normalizeToHex6(colors[v.key] || THEME_DEFAULTS[v.key]);
+                    col.appendChild(label);
+                    col.appendChild(input);
+                    row.appendChild(col);
+                }
+                container.appendChild(row);
+            }
+        }
 
         function loadThemeUI(themeData) {
             const presetEl = document.getElementById('theme-preset');
@@ -1807,12 +1891,9 @@
             if (themeData?.preset) {
                 presetEl.value = themeData.preset;
                 overridesEl.classList.remove('d-none');
-                const defaults = PORTAL_THEMES[themeData.preset] || PORTAL_THEMES.default;
-                const ov = themeData.overrides || {};
-                document.getElementById('theme-bg-body').value = ov['--bg-body'] || defaults['--bg-body'] || '#121212';
-                document.getElementById('theme-bg-card').value = ov['--bg-card'] || defaults['--bg-card'] || '#252525';
-                document.getElementById('theme-accent').value = ov['--accent-primary'] || defaults['--accent-primary'] || '#0097a7';
-                document.getElementById('theme-border').value = ov['--border-light'] || defaults['--border-light'] || '#555555';
+                const base = PORTAL_THEMES[themeData.preset] || THEME_DEFAULTS;
+                const merged = { ...base, ...(themeData.overrides || {}) };
+                buildThemeOverridesUI(merged);
             } else {
                 presetEl.value = '';
                 overridesEl.classList.add('d-none');
@@ -1824,27 +1905,24 @@
             const overridesEl = document.getElementById('theme-overrides');
             if (val) {
                 overridesEl.classList.remove('d-none');
-                const defaults = PORTAL_THEMES[val] || PORTAL_THEMES.default;
-                document.getElementById('theme-bg-body').value = defaults['--bg-body'] || '#121212';
-                document.getElementById('theme-bg-card').value = defaults['--bg-card'] || '#252525';
-                document.getElementById('theme-accent').value = defaults['--accent-primary'] || '#0097a7';
-                document.getElementById('theme-border').value = defaults['--border-light'] || '#555555';
+                const colors = PORTAL_THEMES[val] || THEME_DEFAULTS;
+                buildThemeOverridesUI({ ...colors });
             } else {
                 overridesEl.classList.add('d-none');
             }
         });
 
         function getThemeOverrides(presetName) {
-            const defaults = PORTAL_THEMES[presetName] || PORTAL_THEMES.default;
+            const base = PORTAL_THEMES[presetName] || THEME_DEFAULTS;
             const overrides = {};
-            const bgBody = document.getElementById('theme-bg-body').value;
-            const bgCard = document.getElementById('theme-bg-card').value;
-            const accent = document.getElementById('theme-accent').value;
-            const border = document.getElementById('theme-border').value;
-            if (bgBody !== defaults['--bg-body']) overrides['--bg-body'] = bgBody;
-            if (bgCard !== defaults['--bg-card']) overrides['--bg-card'] = bgCard;
-            if (accent !== defaults['--accent-primary']) overrides['--accent-primary'] = accent;
-            if (border !== defaults['--border-light']) overrides['--border-light'] = border;
+            const pickers = document.querySelectorAll('#theme-overrides input[type="color"]');
+            for (const input of pickers) {
+                const key = input.dataset.varkey;
+                const val = input.value;
+                if (val !== normalizeToHex6(base[key])) {
+                    overrides[key] = val;
+                }
+            }
             return overrides;
         }
 

@@ -16,6 +16,7 @@
   --text-muted: #aaa;
   --text-dim: #555;
   --text-on-inset: #ccc;
+  --text-fs-label: #ccc;
   --text-countdown: #ffcc00;
   --text-live: #00ff00;
   --text-discontinued: #ff4444;
@@ -470,7 +471,7 @@ li { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.4; padding-bottom: 1
     text-transform: uppercase;
     letter-spacing: 1.5px;
     font-weight: 700;
-    color: var(--text-on-inset);
+    color: var(--text-fs-label);
     padding-bottom: 0;
 }
 
